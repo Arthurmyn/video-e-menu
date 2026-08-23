@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nauryz — Меню</title>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF5722">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="initialLoading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,sans-serif;color:#A79F99;font-size:13px;">Загрузка меню…</div>
+<div id="app" hidden>
+
+  <header class="site-header">
+    <div class="header-inner container">
+      <button type="button" class="brand" id="brandHomeBtn" aria-label="На главную">
+        <span class="brand-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.9"><path d="M4 10h16"/><path d="M6 10v9"/><path d="M18 10v9"/><path d="M4 10a8 8 0 0 1 16 0"/></svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-sub"><span id="dineInLabel"></span> · <span id="tableLabel"></span></span>
+          <span class="brand-name" id="restaurantName"></span>
+        </span>
+      </button>
+
+      <nav class="top-nav" id="topNav" aria-label="Основная навигация"></nav>
+
+      <div class="header-actions">
+        <button type="button" class="pill-btn" id="langBtn" title="Сменить язык">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 3 2.8 15 0 18"/><path d="M12 3c-2.8 3-2.8 15 0 18"/></svg>
+          <span id="langCode"></span>
+        </button>
+        <button type="button" class="icon-btn" id="infoBtn" title="Информация о заведении">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="container search-row" id="searchRow">
+      <label class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B6ADA7" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="text" id="searchInput">
+      </label>
+      <button type="button" class="filter-btn" id="filterBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        <span class="badge" id="filterBadge" hidden></span>
+      </button>
+    </div>
+
+    <div class="container hero" id="hero">
+      <h1><span id="heroLine1"></span> <span id="heroLine2"></span></h1>
+    </div>
+
+    <div class="container strip" id="catStrip"></div>
+    <div class="container strip strip-tabs" id="menuTabs"></div>
+    <div class="container strip" id="menuChips"></div>
+  </header>
+
+  <main class="container">
+    <section id="screen-home" class="screen">
+      <div class="section-title-row">
+        <h2 id="homeTitle"></h2>
+        <button type="button" class="link-btn" id="fullMenuBtn"></button>
+      </div>
+      <div class="dish-grid" id="homeGrid"></div>
+    </section>
+
+    <section id="screen-menu" class="screen">
+      <div class="section-title-row">
+        <h2 id="menuTitle"></h2>
+      </div>
+      <div class="row-grid" id="menuGrid"></div>
+    </section>
+
+    <section id="screen-fav" class="screen">
+      <div class="screen-header">
+        <button type="button" class="icon-btn back-btn" id="favBackBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+        </button>
+        <div>
+          <div class="screen-sub" id="favCountLabel"></div>
+          <h2 class="screen-heading" id="favTitle"></h2>
+        </div>
+      </div>
+      <div class="row-grid" id="favGrid"></div>
+      <div class="empty-state" id="favEmpty" hidden>
+        <div class="empty-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="1.8"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+        </div>
+        <div class="empty-title" id="favEmptyTitle"></div>
+        <div class="empty-sub" id="favEmptySub"></div>
+        <button type="button" class="btn-dark" id="favBrowseBtn"></button>
+      </div>
+    </section>
+
+    <section id="screen-cart" class="screen">
+      <div class="screen-header">
+        <button type="button" class="icon-btn back-btn" id="cartBackBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+        </button>
+        <div>
+          <div class="screen-sub"><span id="cartDineInLabel"></span> · <span id="cartTableLabel"></span></div>
+          <h2 class="screen-heading" id="cartTitle"></h2>
+        </div>
+      </div>
+      <div class="cart-layout" id="cartLayout">
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-summary" id="cartSummary">
+          <div class="summary-row summary-total"><span id="cartTotalLabel"></span><span id="cartTotal"></span></div>
+          <button type="button" class="btn-place-order" id="placeOrderBtn">
+            <span id="orderLabel"></span>
+            <span id="orderTotal"></span>
+          </button>
+        </div>
+      </div>
+      <div class="empty-state" id="cartEmpty" hidden>
+        <div class="empty-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </div>
+        <div class="empty-title" id="cartEmptyTitle"></div>
+        <div class="empty-sub" id="cartEmptySub"></div>
+        <button type="button" class="btn-dark" id="cartBrowseBtn"></button>
+      </div>
+    </section>
+
+    <section id="screen-detail" class="screen">
+      <div id="detailContent"></div>
+    </section>
+  </main>
+
+  <div class="cart-bar-wrap" id="cartBarWrap" hidden>
+    <button type="button" class="cart-bar" id="cartBarBtn">
+      <span class="cart-bar-left"><span id="cartBarLabel"></span> <span class="cart-bar-count" id="cartBarCount"></span></span>
+      <span id="cartBarTotal"></span>
+    </button>
+  </div>
+
+  <nav class="bottom-nav" id="bottomNav" aria-label="Основная навигация"></nav>
+
+  <div class="modal-backdrop" id="infoBackdrop" hidden>
+    <div class="modal sheet">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title-row">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+            <span class="modal-title" id="infoModalTitle"></span>
+          </div>
+          <div class="modal-sub"><span id="infoVenue"></span> · <span id="infoTable"></span></div>
+        </div>
+        <button type="button" class="icon-btn" id="infoCloseBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="info-list">
+        <div class="info-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div><div class="info-t" id="infoHoursTitle"></div><div class="info-s" id="infoHoursValue"></div></div>
+        </div>
+        <div class="info-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12Zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+          <div><div class="info-t" id="infoAddressTitle"></div><div class="info-s" id="infoAddressValue"></div></div>
+        </div>
+        <div class="info-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><path d="M6.6 10.8a15.6 15.6 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.1-.2c1.2.5 2.5.7 3.8.7a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.6 21 3 13.4 3 4a1 1 0 0 1 1-1h3.3a1 1 0 0 1 1 1c0 1.3.2 2.6.7 3.8a1 1 0 0 1-.2 1.1L6.6 10.8Z"/></svg>
+          <div><div class="info-t" id="infoPhoneTitle"></div><div class="info-s"><a href="tel:+77712886434" id="infoPhoneLink"></a></div></div>
+        </div>
+        <div class="info-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><path d="M10.3 3.2a9 9 0 1 0 10.5 10.5A7 7 0 0 1 10.3 3.2Z"/></svg>
+          <div><div class="info-t" id="infoAllergensTitle"></div><div class="info-s" id="infoAllergensValue"></div></div>
+        </div>
+      </div>
+      <button type="button" class="btn-dark btn-block" id="infoGotItBtn"></button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="filtersBackdrop" hidden>
+    <div class="modal sheet filters-sheet">
+      <div class="modal-head">
+        <span class="modal-title" id="filtersModalTitle"></span>
+        <button type="button" class="icon-btn" id="filtersCloseBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="filter-label" id="priceFilterLabel"></div>
+      <div class="price-range">
+        <div class="price-field"><span id="fromLabel"></span><input type="text" inputmode="decimal" placeholder="0" id="priceMinInput"><span class="dollar">₸</span></div>
+        <div class="price-field"><span id="toLabel"></span><input type="text" inputmode="decimal" placeholder="5500" id="priceMaxInput"><span class="dollar">₸</span></div>
+      </div>
+
+      <div class="filters-actions">
+        <button type="button" class="btn-outline" id="resetFiltersBtn"></button>
+        <button type="button" class="btn-dark" id="applyFiltersBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

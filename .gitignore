@@ -1,0 +1,23 @@
+# Secrets — never commit these
+.env
+.env.local
+.env*.local
+**/.env
+**/.env.local
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Vercel local project link (contains org/project IDs, not needed in repo)
+.vercel/
+**/.vercel/
+
+# Claude Code / agent tooling artifacts (session state, auto-installed skill docs)
+.claude/
+**/.claude/
+.agents/
+**/.agents/
+
+# OS cruft
+.DS_Store

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nauryz — Админка меню</title>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<style>
+  :root {
+    --bg: #F3EFEC; --surface: #FFFFFF; --ink: #141414; --muted: #A79F99; --muted-2: #7C736D;
+    --accent: #FF5722; --accent-dark: #EA3B0C; --border: #EDE8E4;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 24px 80px; }
+  h1 { font-size: 22px; font-weight: 900; margin: 0; }
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+  .btn { border: none; font-family: inherit; font-size: 13px; font-weight: 700; padding: 11px 18px; border-radius: 999px; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-dark { background: var(--ink); color: #fff; }
+  .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--ink); }
+  .btn-outline:hover { border-color: var(--ink); }
+  .btn-danger { background: #fff; border: 1.5px solid #f3c9c0; color: #c0392b; }
+  .btn-danger:hover { background: #fdecea; }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  #loginScreen { max-width: 360px; margin: 100px auto; text-align: center; }
+  #loginScreen h1 { margin-bottom: 6px; }
+  #loginScreen p { color: var(--muted-2); font-size: 13px; margin: 0 0 20px; }
+  #loginScreen input { width: 100%; padding: 13px 15px; border-radius: 14px; border: 1.5px solid var(--border); font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  #loginError { color: #c0392b; font-size: 12.5px; min-height: 18px; margin-bottom: 6px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 3px 16px rgba(0,0,0,0.06); }
+  th, td { text-align: left; padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted-2); font-weight: 700; background: #FAF8F6; }
+  tr:last-child td { border-bottom: none; }
+  .dish-name { font-weight: 700; }
+  .muted { color: var(--muted-2); font-size: 12px; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+  .badge-available { background: #E8F7EE; color: #1E8A4C; }
+  .badge-unavailable { background: #F3EDEA; color: var(--muted-2); }
+  .row-actions { display: flex; gap: 6px; }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(20,20,20,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal { width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; background: #fff; border-radius: 20px; padding: 24px; }
+  .modal h2 { font-size: 18px; margin: 0 0 18px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--muted-2); margin-bottom: 5px; }
+  .field input[type=text], .field input[type=number], .field select {
+    width: 100%; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 13px; font-family: inherit;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .checkline { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
+  .size-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .size-row input { flex: 1; }
+  .size-row button { flex: none; }
+  .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
+  .modal-actions-right { display: flex; gap: 10px; }
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: 13px; font-weight: 600; padding: 11px 20px; border-radius: 999px; z-index: 60; }
+  .empty-hint { color: var(--muted-2); font-size: 13px; padding: 30px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>Nauryz — Админка</h1>
+  <p>Введите пароль администратора</p>
+  <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="current-password">
+  <div id="loginError"></div>
+  <button type="button" class="btn btn-primary" id="loginBtn" style="width:100%;">Войти</button>
+</div>
+
+<div id="dashboard" class="wrap" hidden>
+  <div class="top">
+    <h1>Меню Nauryz</h1>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn btn-primary" id="addDishBtn">+ Добавить блюдо</button>
+      <button type="button" class="btn btn-outline" id="logoutBtn">Выйти</button>
+      <a href="./" target="_blank" style="align-self:center; font-size:12.5px; color:var(--muted-2);">Открыть меню →</a>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Блюдо</th><th>Категория</th><th>Цена</th><th>Наличие</th><th></th></tr>
+    </thead>
+    <tbody id="dishRows"></tbody>
+  </table>
+  <div class="empty-hint" id="emptyHint" hidden>Пока нет ни одного блюда.</div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal">
+    <h2 id="modalTitle">Блюдо</h2>
+    <div class="field">
+      <label>Название</label>
+      <input type="text" id="fName">
+    </div>
+    <div class="field">
+      <label>Категория</label>
+      <select id="fCategory"></select>
+    </div>
+
+    <div class="field">
+      <label>Размеры / цены (₸)</label>
+      <div id="sizesList"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="addSizeBtn">+ Добавить размер</button>
+    </div>
+
+    <div class="row3">
+      <div class="field"><label>Рейтинг (0–5)</label><input type="number" id="fRating" step="0.1" min="0" max="5"></div>
+      <div class="field"><label>Калории</label><input type="number" id="fCal" min="0"></div>
+      <div class="field"><label>Время, мин</label><input type="number" id="fTime" min="0"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Скидка, % (0 — нет)</label><input type="number" id="fOfferPct" min="0" max="90"></div>
+      <div class="field"><label>Фото (URL, необязательно)</label><input type="text" id="fImg" placeholder="https://…"></div>
+    </div>
+    <div class="field">
+      <label>Видео (необязательно — заменяет фото в меню, фото остаётся как постер)</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="fVideo" placeholder="https://…mp4" style="flex:1;">
+        <button type="button" class="btn btn-outline btn-sm" id="videoFileBtn">Загрузить файл…</button>
+        <input type="file" id="videoFileInput" accept="video/mp4,video/*" hidden>
+      </div>
+      <div class="muted" id="videoUploadStatus" style="margin-top:5px;"></div>
+    </div>
+
+    <label class="checkline"><input type="checkbox" id="fAvailable"> В наличии</label>
+    <label class="checkline"><input type="checkbox" id="fPopular"> Отмечено «Популярное»</label>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-danger" id="deleteDishBtn" hidden>Удалить блюдо</button>
+      <div class="modal-actions-right">
+        <button type="button" class="btn btn-outline" id="cancelModalBtn">Отмена</button>
+        <button type="button" class="btn btn-primary" id="saveDishBtn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

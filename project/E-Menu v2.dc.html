@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<style>
+  body { margin:0; background:#efe7e3; font-family:Inter, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  @keyframes scrIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .noscroll::-webkit-scrollbar { display:none; }
+  a { color:#FF5722; text-decoration:none; }
+  a:hover { color:#e04413; }
+</style>
+</helmet>
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px; font-family:Inter, system-ui, sans-serif;">
+  <div style="width:375px; height:812px; background:#FBFAF9; border-radius:44px; box-shadow:0 26px 70px rgba(0,0,0,0.22); overflow:hidden; position:relative; display:flex; flex-direction:column;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 26px 2px; flex:none;">
+      <div style="font-size:14px; font-weight:700; color:#141414;">9:41</div>
+      <div style="width:96px; height:26px; background:#141414; border-radius:20px;"></div>
+      <div style="display:flex; align-items:flex-end; gap:5px;">
+        <div style="display:flex; align-items:flex-end; gap:2px;">
+          <div style="width:3px; height:5px; background:#141414;"></div>
+          <div style="width:3px; height:8px; background:#141414;"></div>
+          <div style="width:3px; height:11px; background:#141414;"></div>
+          <div style="width:3px; height:13px; background:#141414;"></div>
+        </div>
+        <div style="width:23px; height:12px; border:1.5px solid #141414; border-radius:3px; padding:1.5px; box-sizing:border-box;">
+          <div style="width:100%; height:100%; background:#141414;"></div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div class="noscroll" style="flex:1; overflow-y:auto; animation:scrIn .25s ease;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 22px 0;">
+          <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+            <div style="width:34px; height:34px; flex:none; border-radius:12px; background:#F1EFEC; display:flex; align-items:center; justify-content:center;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.9"><path d="M4 10h16"/><path d="M6 10v9"/><path d="M18 10v9"/><path d="M4 10a8 8 0 0 1 16 0"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:10px; font-weight:600; color:#9A938E; letter-spacing:.3px; white-space:nowrap;">Dine in · {{ tableLabel }}</div>
+              <div style="font-size:12px; font-weight:700; color:#141414; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ restaurantName }}</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:7px; flex:none;">
+            <button type="button" onClick="{{ cycleLang }}" title="Change language" style="height:38px; padding:0 11px; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; gap:5px; cursor:pointer; transition:all .25s ease;" style-hover="background:#F1EFEC;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 3 2.8 15 0 18"/><path d="M12 3c-2.8 3-2.8 15 0 18"/></svg>
+              <span style="font-size:10.5px; font-weight:800; color:#141414; letter-spacing:.4px;">{{ langCode }}</span>
+            </button>
+            <button type="button" onClick="{{ openInfo }}" title="Venue info" style="width:38px; height:38px; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;" style-hover="background:#F1EFEC;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="padding:22px 22px 0;">
+          <div style="font-size:29px; font-weight:900; color:#141414; line-height:1.1; letter-spacing:-0.8px;">Hungry? <span style="color:#B6ADA7; font-weight:700;">Order &amp; Eat.</span></div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:18px 22px 0;">
+          <div style="flex:1; display:flex; align-items:center; gap:9px; background:#FFFFFF; border-radius:999px; padding:13px 16px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B6ADA7" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="text" placeholder="Search the menu" value="{{ query }}" onChange="{{ onQuery }}" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; color:#141414;">
+          </div>
+          <button type="button" onClick="{{ openFilters }}" style="position:relative; width:46px; height:46px; flex:none; border:none; border-radius:999px; background:#141414; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;" style-hover="background:#FF5722;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+            <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+              <span style="position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 4px; box-sizing:border-box; background:#FF5722; color:#fff; font-size:10px; font-weight:800; border-radius:999px; display:flex; align-items:center; justify-content:center; border:2px solid #FBFAF9;">{{ filterCount }}</span>
+            </sc-if>
+          </button>
+        </div>
+
+        <div class="noscroll" style="display:flex; gap:16px; overflow-x:auto; padding:22px 22px 6px;">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+            <button type="button" onClick="{{ c.onPick }}" style="border:none; background:transparent; padding:0 0 8px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; flex:none; font-family:inherit; border-bottom:2.5px solid {{ c.underline }}; transition:all .25s ease;">
+              <div style="width:{{ c.dim }}; height:{{ c.dim }}; border-radius:999px; background:#FFFFFF; box-shadow:0 3px 14px rgba(0,0,0,0.07); display:flex; align-items:center; justify-content:center; transition:all .25s ease;">
+                <svg width="{{ c.iconSize }}" height="{{ c.iconSize }}" viewBox="0 0 24 24" fill="none" stroke="{{ c.iconStroke }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ c.icon }}"/></svg>
+              </div>
+              <span style="font-size:11px; font-weight:{{ c.weight }}; color:{{ c.fg }};">{{ c.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; align-items:baseline; justify-content:space-between; padding:12px 22px 0;">
+          <div style="font-size:16px; font-weight:800; color:#141414; white-space:nowrap;">{{ gridTitle }}</div>
+          <button type="button" onClick="{{ goMenu }}" style="border:none; background:transparent; font-family:inherit; font-size:12px; font-weight:700; color:#FF5722; cursor:pointer; padding:0; white-space:nowrap;">Full menu</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px 22px 130px;">
+          <sc-for list="{{ homeList }}" as="d" hint-placeholder-count="6">
+            <div style="background:#FFFFFF; border-radius:20px; box-shadow:0 3px 16px rgba(0,0,0,0.06); overflow:hidden;">
+              <div style="position:relative; cursor:pointer;" onClick="{{ d.onOpen }}">
+                <div style="width:100%; height:118px; background:#F1EFEC;">
+                  <sc-if value="{{ d.img }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ d.img }}" alt="{{ d.name }}" style="width:100%; height:118px; object-fit:cover; display:block;">
+                  </sc-if>
+                </div>
+                <button type="button" onClick="{{ d.onFav }}" style="position:absolute; right:8px; top:8px; width:27px; height:27px; border:none; border-radius:999px; background:rgba(255,255,255,0.94); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" stroke-width="2" stroke="{{ d.heartStroke }}" fill="{{ d.heartFill }}"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                </button>
+                <sc-if value="{{ d.offer }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; left:50%; transform:translateX(-50%); bottom:-11px; background:#141414; color:#fff; font-size:10px; font-weight:800; padding:5px 12px; border-radius:999px;">-25%</div>
+                </sc-if>
+              </div>
+              <div style="padding:18px 13px 13px; text-align:center;">
+                <div style="font-size:13.5px; font-weight:800; color:#141414;">{{ d.name }}</div>
+                <div style="font-size:11px; color:#A79F99; margin-top:2px;">{{ d.tagline }}</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+                  <div style="display:flex; align-items:flex-start; gap:2px;">
+                    <span style="font-size:11px; font-weight:800; color:#FF5722; margin-top:2px;">$</span>
+                    <span style="font-size:18px; font-weight:800; color:#141414; line-height:1;">{{ d.priceNum }}</span>
+                  </div>
+                  <button type="button" onClick="{{ d.onAdd }}" style="width:30px; height:30px; border:none; border-radius:999px; background:{{ d.addBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="{{ d.addPath }}"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="flex:1; overflow-y:auto; animation:scrIn .25s ease;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px 0;">
+          <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+            <button type="button" onClick="{{ goHome }}" style="width:38px; height:38px; flex:none; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+            </button>
+            <div style="min-width:0;">
+              <div style="font-size:10px; font-weight:600; color:#9A938E; letter-spacing:.3px; white-space:nowrap;">Dine in · {{ tableLabel }}</div>
+              <div style="font-size:19px; font-weight:900; color:#141414; letter-spacing:-0.4px;">The menu</div>
+            </div>
+          </div>
+          <button type="button" onClick="{{ openInfo }}" style="width:38px; height:38px; flex:none; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+          </button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; padding:16px 22px 0;">
+          <div style="flex:1; display:flex; align-items:center; gap:9px; background:#FFFFFF; border-radius:999px; padding:13px 16px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B6ADA7" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="text" placeholder="Search the menu" value="{{ query }}" onChange="{{ onQuery }}" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; color:#141414;">
+          </div>
+          <button type="button" onClick="{{ openFilters }}" style="position:relative; width:46px; height:46px; flex:none; border:none; border-radius:999px; background:#141414; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;" style-hover="background:#FF5722;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+            <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+              <span style="position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 4px; box-sizing:border-box; background:#FF5722; color:#fff; font-size:10px; font-weight:800; border-radius:999px; display:flex; align-items:center; justify-content:center; border:2px solid #FBFAF9;">{{ filterCount }}</span>
+            </sc-if>
+          </button>
+        </div>
+
+        <div class="noscroll" style="display:flex; gap:8px; overflow-x:auto; padding:16px 22px 2px;">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+            <button type="button" onClick="{{ t.onPick }}" style="flex:none; border:none; font-family:inherit; font-size:12px; font-weight:700; padding:11px 18px; border-radius:999px; cursor:pointer; transition:all .25s ease; background:{{ t.bg }}; color:{{ t.fg }};">{{ t.label }}</button>
+          </sc-for>
+        </div>
+
+        <div class="noscroll" style="display:flex; gap:8px; overflow-x:auto; padding:12px 22px 2px;">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="6">
+            <button type="button" onClick="{{ c.onPick }}" style="flex:none; border:1.5px solid {{ c.border }}; font-family:inherit; font-size:11.5px; font-weight:600; padding:7px 14px 7px 11px; border-radius:999px; cursor:pointer; transition:all .25s ease; background:{{ c.bg }}; color:{{ c.fg }}; display:flex; align-items:center; gap:6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{ c.fg }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ c.icon }}"/></svg>
+              {{ c.label }}
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="padding:16px 22px 0; font-size:13px; font-weight:700; color:#141414;">{{ gridTitle }}</div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; padding:12px 22px 140px;">
+          <sc-for list="{{ menuList }}" as="d" hint-placeholder-count="5">
+            <div style="display:flex; gap:13px; align-items:center; background:#FFFFFF; border-radius:20px; box-shadow:0 3px 16px rgba(0,0,0,0.06); padding:11px;">
+              <div style="position:relative; flex:none; cursor:pointer;" onClick="{{ d.onOpen }}">
+                <div style="width:86px; height:86px; border-radius:16px; background:#F1EFEC; overflow:hidden;">
+                  <sc-if value="{{ d.img }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ d.img }}" alt="{{ d.name }}" style="width:86px; height:86px; object-fit:cover; display:block;">
+                  </sc-if>
+                </div>
+                <sc-if value="{{ d.offer }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; left:6px; top:6px; background:#141414; color:#fff; font-size:9px; font-weight:800; padding:3px 7px; border-radius:999px;">-25%</div>
+                </sc-if>
+              </div>
+              <div style="flex:1; min-width:0; cursor:pointer;" onClick="{{ d.onOpen }}">
+                <div style="font-size:14px; font-weight:800; color:#141414;">{{ d.name }}</div>
+                <div style="font-size:11px; color:#A79F99; margin-top:2px;">{{ d.tagline }}</div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:7px; font-size:11px; color:#7C736D; font-weight:600;">
+                  <span style="display:flex; align-items:center; gap:3px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#F5B800" stroke="none"><path d="m12 3 2.6 5.7 6.4.7-4.7 4.3 1.3 6.3L12 17l-5.6 3 1.3-6.3L3 9.4l6.4-.7L12 3Z"/></svg>
+                    {{ d.rating }}
+                  </span>
+                  <span>{{ d.cal }} cal</span>
+                  <span>{{ d.time }} min</span>
+                </div>
+              </div>
+              <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                <button type="button" onClick="{{ d.onFav }}" style="width:26px; height:26px; border:none; border-radius:999px; background:#F7F5F3; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" stroke-width="2" stroke="{{ d.heartStroke }}" fill="{{ d.heartFill }}"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                </button>
+                <div style="display:flex; align-items:flex-start; gap:2px;">
+                  <span style="font-size:11px; font-weight:800; color:#FF5722; margin-top:2px;">$</span>
+                  <span style="font-size:17px; font-weight:800; color:#141414; line-height:1;">{{ d.priceNum }}</span>
+                </div>
+                <button type="button" onClick="{{ d.onAdd }}" style="width:30px; height:30px; border:none; border-radius:999px; background:{{ d.addBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="{{ d.addPath }}"/></svg>
+                </button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFav }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="flex:1; overflow-y:auto; animation:scrIn .25s ease;">
+        <div style="display:flex; align-items:center; gap:12px; padding:14px 22px 0;">
+          <button type="button" onClick="{{ goHome }}" style="width:38px; height:38px; flex:none; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+          </button>
+          <div>
+            <div style="font-size:10px; font-weight:600; color:#9A938E; letter-spacing:.3px;">{{ favCountLabel }}</div>
+            <div style="font-size:19px; font-weight:900; color:#141414; letter-spacing:-0.4px;">Favorites</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasFavs }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:12px; padding:18px 22px 140px;">
+            <sc-for list="{{ favList }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex; gap:13px; align-items:center; background:#FFFFFF; border-radius:20px; box-shadow:0 3px 16px rgba(0,0,0,0.06); padding:11px;">
+                <div style="width:86px; height:86px; flex:none; border-radius:16px; background:#F1EFEC; overflow:hidden; cursor:pointer;" onClick="{{ d.onOpen }}">
+                  <sc-if value="{{ d.img }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ d.img }}" alt="{{ d.name }}" style="width:86px; height:86px; object-fit:cover; display:block;">
+                  </sc-if>
+                </div>
+                <div style="flex:1; min-width:0; cursor:pointer;" onClick="{{ d.onOpen }}">
+                  <div style="font-size:14px; font-weight:800; color:#141414;">{{ d.name }}</div>
+                  <div style="font-size:11px; color:#A79F99; margin-top:2px;">{{ d.tagline }}</div>
+                  <div style="display:flex; align-items:center; gap:10px; margin-top:7px; font-size:11px; color:#7C736D; font-weight:600;">
+                    <span>{{ d.cat }}</span>
+                    <span>{{ d.cal }} cal</span>
+                    <span>{{ d.time }} min</span>
+                  </div>
+                </div>
+                <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                  <button type="button" onClick="{{ d.onFav }}" style="width:26px; height:26px; border:none; border-radius:999px; background:#FFF0EB; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" stroke-width="2" stroke="#FF5722" fill="#FF5722"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+                  </button>
+                  <div style="display:flex; align-items:flex-start; gap:2px;">
+                    <span style="font-size:11px; font-weight:800; color:#FF5722; margin-top:2px;">$</span>
+                    <span style="font-size:17px; font-weight:800; color:#141414; line-height:1;">{{ d.priceNum }}</span>
+                  </div>
+                  <button type="button" onClick="{{ d.onAdd }}" style="width:30px; height:30px; border:none; border-radius:999px; background:{{ d.addBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="{{ d.addPath }}"/></svg>
+                  </button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ noFavs }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:80px 44px; text-align:center;">
+            <div style="width:64px; height:64px; margin:0 auto; border-radius:999px; background:#FFFFFF; box-shadow:0 3px 16px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="1.8"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#141414; margin-top:14px;">No favorites yet</div>
+            <div style="font-size:13px; color:#A79F99; margin-top:6px;">Tap the heart on any dish to keep it here.</div>
+            <button type="button" onClick="{{ goMenu }}" style="margin-top:18px; border:none; font-family:inherit; background:#141414; color:#fff; font-size:13px; font-weight:700; padding:13px 24px; border-radius:999px; cursor:pointer;">Browse the menu</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="flex:1; overflow-y:auto; animation:scrIn .25s ease;">
+        <div style="padding:8px 18px 0; display:flex; align-items:center; justify-content:space-between;">
+          <button type="button" onClick="{{ closeDetail }}" style="width:38px; height:38px; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+          <div style="display:flex; gap:10px;">
+            <button type="button" onClick="{{ openInfo }}" style="width:38px; height:38px; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+            </button>
+            <button type="button" onClick="{{ detailFav }}" style="width:38px; height:38px; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="{{ dish.heartStroke }}" fill="{{ dish.heartFill }}"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="padding:14px 18px 0; position:relative;">
+          <div style="width:100%; height:280px; border-radius:26px; background:#F1EFEC; overflow:hidden;">
+            <sc-if value="{{ dish.img }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ dish.img }}" alt="{{ dish.name }}" style="width:100%; height:280px; object-fit:cover; display:block;">
+            </sc-if>
+          </div>
+          <div style="position:absolute; left:30px; bottom:14px; background:#FF5722; color:#fff; font-size:16px; font-weight:800; padding:9px 17px; border-radius:999px;">{{ selectedPriceLabel }}</div>
+        </div>
+
+        <div style="padding:18px 22px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="font-size:22px; font-weight:900; color:#141414; line-height:1.15; letter-spacing:-0.4px;">{{ dish.name }}</div>
+            <div style="font-size:12px; color:#A79F99; margin-top:4px;">{{ dish.tagline }}</div>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#141414; background:#FFFFFF; padding:8px 13px; border-radius:999px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.8 1.8 2 1.8 3 .8 1-1 1-3.6 0-5.6Z"/></svg>
+            {{ dish.cal }} Cal.
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; padding:14px 22px 0;">
+          <div style="flex:1; background:#FFFFFF; border-radius:16px; padding:11px 13px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <div style="font-size:10px; color:#A79F99; font-weight:600;">Rating</div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:14px; font-weight:800; color:#141414; margin-top:2px;">
+              {{ dish.rating }}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#F5B800" stroke="none"><path d="m12 3 2.6 5.7 6.4.7-4.7 4.3 1.3 6.3L12 17l-5.6 3 1.3-6.3L3 9.4l6.4-.7L12 3Z"/></svg>
+            </div>
+          </div>
+          <div style="flex:1; background:#FFFFFF; border-radius:16px; padding:11px 13px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <div style="font-size:10px; color:#A79F99; font-weight:600;">Prep time</div>
+            <div style="font-size:14px; font-weight:800; color:#141414; margin-top:2px;">{{ dish.time }} min</div>
+          </div>
+          <div style="flex:1; background:#FFFFFF; border-radius:16px; padding:11px 13px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <div style="font-size:10px; color:#A79F99; font-weight:600;">Course</div>
+            <div style="font-size:14px; font-weight:800; color:#141414; margin-top:2px;">{{ dish.cat }}</div>
+          </div>
+        </div>
+
+        <div style="padding:20px 22px 0;">
+          <div style="font-size:16px; font-weight:800; color:#141414;">Ingredients</div>
+          <div style="display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:8px;">
+            <sc-for list="{{ ingredients }}" as="g" hint-placeholder-count="6">
+              <span style="font-size:13px; color:#5C544F;">· {{ g.text }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="padding:18px 18px 0;">
+          <div style="background:#FFFFFF; border-radius:20px; padding:15px 17px; box-shadow:0 3px 16px rgba(0,0,0,0.06);">
+            <div style="font-size:15px; font-weight:800; color:#141414;">Size</div>
+            <div style="display:flex; flex-direction:column; gap:2px; margin-top:8px;">
+              <sc-for list="{{ sizeOpts }}" as="s" hint-placeholder-count="3">
+                <button type="button" onClick="{{ s.onPick }}" style="border:none; background:transparent; font-family:inherit; display:flex; align-items:center; justify-content:space-between; padding:9px 0; cursor:pointer; text-align:left;">
+                  <span style="display:flex; align-items:center; gap:11px;">
+                    <span style="width:20px; height:20px; border-radius:999px; border:2px solid {{ s.ring }}; background:{{ s.dotBg }}; display:flex; align-items:center; justify-content:center; transition:all .25s ease;">
+                      <sc-if value="{{ s.checked }}" hint-placeholder-val="{{ false }}">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4"><path d="m5 13 4 4 10-10"/></svg>
+                      </sc-if>
+                    </span>
+                    <span style="font-size:14px; font-weight:600; color:#141414;">{{ s.label }}</span>
+                  </span>
+                  <span style="font-size:14px; font-weight:700; color:#141414;">{{ s.priceLabel }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:118px;"></div>
+      </div>
+
+      <div style="position:absolute; left:18px; right:18px; bottom:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#141414; border-radius:22px; padding:9px 10px 9px 20px; box-shadow:0 12px 30px rgba(0,0,0,0.28);">
+          <button type="button" onClick="{{ addDetailToCart }}" style="border:none; background:transparent; font-family:inherit; color:#fff; font-size:15.5px; font-weight:700; cursor:pointer; padding:9px 0;">Add to order · {{ detailTotalLabel }}</button>
+          <div style="display:flex; align-items:center; gap:7px; background:rgba(255,255,255,0.12); border-radius:999px; padding:4px;">
+            <button type="button" onClick="{{ decQty }}" style="width:30px; height:30px; border:none; border-radius:999px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="3"><path d="M5 12h14"/></svg>
+            </button>
+            <span style="min-width:18px; text-align:center; font-size:15px; font-weight:800; color:#fff;">{{ qty }}</span>
+            <button type="button" onClick="{{ incQty }}" style="width:30px; height:30px; border:none; border-radius:999px; background:#FF5722; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCart }}" hint-placeholder-val="{{ false }}">
+      <div class="noscroll" style="flex:1; overflow-y:auto; animation:scrIn .25s ease;">
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 22px 16px;">
+          <button type="button" onClick="{{ goMenu }}" style="width:38px; height:38px; flex:none; border:none; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 10px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+          </button>
+          <div>
+            <div style="font-size:10px; font-weight:600; color:#9A938E; letter-spacing:.3px;">Dine in · {{ tableLabel }}</div>
+            <div style="font-size:19px; font-weight:900; color:#141414; letter-spacing:-0.4px;">Your order</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:12px; padding:0 22px;">
+            <sc-for list="{{ cartItems }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex; gap:13px; align-items:center; background:#FFFFFF; border-radius:20px; box-shadow:0 3px 16px rgba(0,0,0,0.06); padding:11px;">
+                <div style="width:74px; height:74px; border-radius:16px; background:#F1EFEC; overflow:hidden; flex:none;">
+                  <sc-if value="{{ c.img }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ c.img }}" alt="{{ c.name }}" style="width:74px; height:74px; object-fit:cover; display:block;">
+                  </sc-if>
+                </div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:14px; font-weight:800; color:#141414;">{{ c.name }}</div>
+                  <div style="font-size:11px; color:#A79F99; margin-top:2px;">{{ c.sizeLabel }} · {{ c.unitLabel }}</div>
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-top:9px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <button type="button" onClick="{{ c.onDec }}" style="width:24px; height:24px; border:1.5px solid #FF5722; border-radius:999px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="3"><path d="M5 12h14"/></svg>
+                      </button>
+                      <span style="font-size:14px; font-weight:800; color:#FF5722; min-width:12px; text-align:center;">{{ c.qty }}</span>
+                      <button type="button" onClick="{{ c.onInc }}" style="width:24px; height:24px; border:none; border-radius:999px; background:#FF5722; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
+                    </div>
+                    <div style="font-size:14px; font-weight:800; color:#141414;">{{ c.lineLabel }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin:18px 22px 0; background:#FFFFFF; border-radius:20px; padding:15px 17px; box-shadow:0 3px 16px rgba(0,0,0,0.06);">
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:#5C544F;"><span>Subtotal</span><span style="font-weight:700; color:#141414;">{{ subtotalLabel }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:#5C544F; margin-top:7px;"><span>Service (10%)</span><span style="font-weight:700; color:#141414;">{{ serviceLabel }}</span></div>
+            <div style="height:1px; background:#EFEBE8; margin:12px 0;"></div>
+            <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:#141414;"><span>Total</span><span>{{ totalLabel }}</span></div>
+          </div>
+          <div style="height:150px;"></div>
+        </sc-if>
+
+        <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:70px 40px; text-align:center;">
+            <div style="width:64px; height:64px; margin:0 auto; border-radius:999px; background:#FFFFFF; box-shadow:0 3px 16px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg>
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#141414; margin-top:14px;">Nothing ordered yet</div>
+            <div style="font-size:13px; color:#A79F99; margin-top:6px;">Pick a dish from the menu to start your order.</div>
+            <button type="button" onClick="{{ goMenu }}" style="margin-top:18px; border:none; font-family:inherit; background:#141414; color:#fff; font-size:13px; font-weight:700; padding:13px 24px; border-radius:999px; cursor:pointer;">Open the menu</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; left:18px; right:18px; bottom:104px;">
+          <button type="button" onClick="{{ placeOrder }}" style="width:100%; border:none; font-family:inherit; background:#FF5722; color:#fff; border-radius:22px; padding:17px 20px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; box-shadow:0 10px 28px rgba(255,87,34,0.34); transition:all .25s ease;" style-hover="background:#EA3B0C;">
+            <span style="font-size:15px; font-weight:700;">{{ orderLabel }}</span>
+            <span style="font-size:16px; font-weight:800;">{{ totalLabel }}</span>
+          </button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ showCartBar }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:18px; right:18px; bottom:104px; animation:scrIn .25s ease;">
+        <button type="button" onClick="{{ goCart }}" style="width:100%; border:none; font-family:inherit; background:#FF5722; color:#fff; border-radius:22px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; box-shadow:0 10px 28px rgba(255,87,34,0.34); transition:all .25s ease;" style-hover="background:#EA3B0C;">
+          <span style="display:flex; align-items:center; gap:9px; font-size:15px; font-weight:700;">
+            View your order
+            <span style="background:#141414; font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px;">{{ cartCount }}x</span>
+          </span>
+          <span style="font-size:16px; font-weight:800;">{{ subtotalLabel }}</span>
+        </button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; left:22px; right:22px; bottom:22px; height:64px; background:#141414; border-radius:999px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; box-shadow:0 14px 34px rgba(0,0,0,0.3);">
+        <button type="button" onClick="{{ goHome }}" style="width:46px; height:46px; border:none; border-radius:999px; background:{{ navHomeBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ navHomeFg }}" stroke-width="2"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8Z"/></svg>
+        </button>
+        <button type="button" onClick="{{ goMenu }}" style="width:46px; height:46px; border:none; border-radius:999px; background:{{ navMenuBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ navMenuFg }}" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+        </button>
+        <button type="button" onClick="{{ goFav }}" style="position:relative; width:46px; height:46px; border:none; border-radius:999px; background:{{ navFavBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ navFavFg }}" stroke-width="2"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+          <sc-if value="{{ hasFavs }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute; top:2px; right:0; min-width:17px; height:17px; padding:0 4px; box-sizing:border-box; background:#FF5722; color:#fff; font-size:10px; font-weight:800; border-radius:999px; display:flex; align-items:center; justify-content:center; border:2px solid #141414;">{{ favCount }}</span>
+          </sc-if>
+        </button>
+        <button type="button" onClick="{{ goCart }}" style="position:relative; width:46px; height:46px; border:none; border-radius:999px; background:{{ navCartBg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .25s ease;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ navCartFg }}" stroke-width="2"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M3 4h2l2.5 11h11L21 7H6"/></svg>
+          <sc-if value="{{ hasCart }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute; top:2px; right:0; min-width:17px; height:17px; padding:0 4px; box-sizing:border-box; background:#FF5722; color:#fff; font-size:10px; font-weight:800; border-radius:999px; display:flex; align-items:center; justify-content:center; border:2px solid #141414;">{{ cartCount }}</span>
+          </sc-if>
+        </button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ infoOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; background:rgba(20,20,20,0.42); animation:fadeIn .2s ease; display:flex; align-items:flex-end;" onClick="{{ closeInfo }}">
+        <div style="width:100%; background:#FFFFFF; border-radius:30px 30px 44px 44px; padding:22px 24px 30px; animation:scrIn .25s ease;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5722" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6v.01"/></svg>
+                <div style="font-size:19px; font-weight:900; color:#141414; letter-spacing:-0.3px;">Good to know</div>
+              </div>
+              <div style="font-size:12px; color:#A79F99; margin-top:4px;">{{ restaurantName }} · {{ tableLabel }}</div>
+            </div>
+            <button type="button" onClick="{{ closeInfo }}" style="width:34px; height:34px; flex:none; border:none; border-radius:999px; background:#F1EFEC; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8" style="flex:none; margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <div><div style="font-size:13px; font-weight:700; color:#141414;">Kitchen hours</div><div style="font-size:12px; color:#7C736D; margin-top:2px;">Daily 11:00 – 23:30. Last order 23:00.</div></div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8" style="flex:none; margin-top:1px;"><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M2 9.5a15 15 0 0 1 20 0"/></svg>
+              <div><div style="font-size:13px; font-weight:700; color:#141414;">Wi-Fi</div><div style="font-size:12px; color:#7C736D; margin-top:2px;">Network “Guest” · password on your table card.</div></div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8" style="flex:none; margin-top:1px;"><path d="M10.3 3.2a9 9 0 1 0 10.5 10.5A7 7 0 0 1 10.3 3.2Z"/></svg>
+              <div><div style="font-size:13px; font-weight:700; color:#141414;">Allergens</div><div style="font-size:12px; color:#7C736D; margin-top:2px;">Ask your server before ordering — every dish is prepared in a shared kitchen.</div></div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.8" style="flex:none; margin-top:1px;"><path d="M4 7h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
+              <div><div style="font-size:13px; font-weight:700; color:#141414;">Service</div><div style="font-size:12px; color:#7C736D; margin-top:2px;">A 10% service charge is added to your bill.</div></div>
+            </div>
+          </div>
+          <button type="button" onClick="{{ closeInfo }}" style="width:100%; margin-top:22px; border:none; font-family:inherit; background:#141414; color:#fff; font-size:14px; font-weight:700; padding:15px; border-radius:20px; cursor:pointer; transition:all .25s ease;" style-hover="background:#FF5722;">Got it</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ filtersOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; background:rgba(20,20,20,0.42); animation:fadeIn .2s ease; display:flex; align-items:flex-end;" onClick="{{ closeFilters }}">
+        <div class="noscroll" onClick="{{ stopClick }}" style="width:100%; max-height:640px; overflow-y:auto; background:#FFFFFF; border-radius:30px 30px 44px 44px; padding:22px 24px 28px; animation:scrIn .25s ease; box-sizing:border-box;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="font-size:19px; font-weight:900; color:#141414; letter-spacing:-0.3px;">Filters</div>
+            <button type="button" onClick="{{ closeFilters }}" style="width:34px; height:34px; border:none; border-radius:999px; background:#F1EFEC; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div style="font-size:12px; font-weight:800; color:#141414; margin-top:20px;">Price</div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:9px;">
+            <div style="flex:1 1 0; min-width:0; display:flex; align-items:center; gap:5px; background:#F7F5F3; border-radius:14px; padding:11px 12px; box-sizing:border-box;">
+              <span style="font-size:11px; font-weight:700; color:#A79F99; flex:none;">From</span>
+              <span style="font-size:12px; font-weight:800; color:#FF5722; flex:none;">$</span>
+              <input type="text" inputmode="decimal" placeholder="0" value="{{ priceMin }}" onChange="{{ onPriceMin }}" style="flex:1 1 0; width:100%; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; font-weight:700; color:#141414;">
+            </div>
+            <div style="flex:1 1 0; min-width:0; display:flex; align-items:center; gap:5px; background:#F7F5F3; border-radius:14px; padding:11px 12px; box-sizing:border-box;">
+              <span style="font-size:11px; font-weight:700; color:#A79F99; flex:none;">To</span>
+              <span style="font-size:12px; font-weight:800; color:#FF5722; flex:none;">$</span>
+              <input type="text" inputmode="decimal" placeholder="40" value="{{ priceMax }}" onChange="{{ onPriceMax }}" style="flex:1 1 0; width:100%; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:13px; font-weight:700; color:#141414;">
+            </div>
+          </div>
+
+          <div style="font-size:12px; font-weight:800; color:#141414; margin-top:20px;">Preparation time</div>
+          <div style="display:flex; gap:7px; margin-top:9px;">
+            <sc-for list="{{ prepOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{ o.onPick }}" style="flex:1; border:1.5px solid {{ o.border }}; font-family:inherit; font-size:11.5px; font-weight:700; padding:10px 4px; border-radius:999px; cursor:pointer; transition:all .25s ease; background:{{ o.bg }}; color:{{ o.fg }};">{{ o.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="font-size:12px; font-weight:800; color:#141414; margin-top:20px;">Spice</div>
+          <div style="display:flex; gap:7px; margin-top:9px;">
+            <sc-for list="{{ spiceOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{ o.onPick }}" style="flex:1; border:1.5px solid {{ o.border }}; font-family:inherit; font-size:11.5px; font-weight:700; padding:10px 4px; border-radius:999px; cursor:pointer; transition:all .25s ease; background:{{ o.bg }}; color:{{ o.fg }};">{{ o.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="font-size:12px; font-weight:800; color:#141414; margin-top:20px;">Also show only</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">
+            <sc-for list="{{ toggleOpts }}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{ o.onToggle }}" style="border:1.5px solid {{ o.border }}; font-family:inherit; font-size:11.5px; font-weight:700; padding:9px 14px; border-radius:999px; cursor:pointer; transition:all .25s ease; background:{{ o.bg }}; color:{{ o.fg }}; display:flex; align-items:center; gap:7px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ o.fg }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ o.icon }}"/></svg>
+                {{ o.label }}
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:24px;">
+            <button type="button" onClick="{{ resetFilters }}" style="flex:none; border:1.5px solid #EDE8E4; font-family:inherit; background:#FFFFFF; color:#5C544F; font-size:13px; font-weight:700; padding:15px 20px; border-radius:20px; cursor:pointer; transition:all .25s ease;" style-hover="border-color:#141414; color:#141414;">Reset</button>
+            <button type="button" onClick="{{ closeFilters }}" style="flex:1; border:none; font-family:inherit; background:#141414; color:#fff; font-size:14px; font-weight:700; padding:15px; border-radius:20px; cursor:pointer; transition:all .25s ease;" style-hover="background:#FF5722;">{{ filterResultLabel }}</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:50%; transform:translateX(-50%); bottom:180px; background:#141414; color:#fff; font-size:12px; font-weight:600; padding:11px 20px; border-radius:999px; animation:scrIn .25s ease;">{{ toast }}</div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:900},&quot;restaurantName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Olive &amp; Ember&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Venue&quot;},&quot;tableLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Table 12&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Venue&quot;}}">
+const ICONS = {
+  all: 'M4 4.5h6.5v6.5H4zM13.5 4.5H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z',
+  burger: 'M4 9.5a8 8 0 0 1 16 0zM3.5 12.5h17M4.5 15.5h15a3.5 3.5 0 0 1-3.5 3H8a3.5 3.5 0 0 1-3.5-3z',
+  pizza: 'M12 21.5 4.2 6.6a19 19 0 0 1 15.6 0zM10 12h.01M14 15h.01',
+  pasta: 'M3.5 12.5h17a8.5 8.5 0 0 1-17 0zM7 9.5c1-2.2 3-2.2 4 0M13 9.5c1-2.2 3-2.2 4 0',
+  salad: 'M3.5 13h17a8.5 8.5 0 0 1-17 0zM9.5 10.5c-.5-3 1.5-5.5 4.5-5.5.4 3-1.5 5.5-4.5 5.5z',
+  sushi: 'M6 12a6 6 0 1 0 12 0 6 6 0 1 0-12 0M10 12a2 2 0 1 0 4 0 2 2 0 1 0-4 0',
+  grill: 'M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2.8 1.8 2 1.8 3 .8 1-1 1-3.6 0-5.6Z',
+  wrap: 'M5 19.5 19.5 5A6 6 0 0 0 11 4.4L4.4 11a6 6 0 0 0 .6 8.5zM9 15l6-6',
+  snack: 'M8 9.5h8L15 20H9zM10.5 9.5V4.5M13.5 9.5V5.5M12 9.5V3.5',
+  dessert: 'M4.5 20h15v-6h-15zM6.5 14v-3h11v3M12 11V8M12 5.5v.01'
+};
+
+const DISHES = [
+  { id:'burger', name:'Cheese Burger', cat:'Burger', tagline:'Double beef, aged cheddar', cal:271, rating:4.8, time:31, popular:true, offer:true,
+    img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
+    ingredients:['1 Juicy beef','1 Slice of cheddar cheese','1 burger bun','Fresh lettuce','Ripe tomato slices','Pickles for crunch','Ketchup','Mustard','Onions and bacon'],
+    sizes:[{label:'Single',price:8.99},{label:'Double',price:9.99},{label:'Triple',price:10.99}] },
+  { id:'pizza', name:'Pizza Sicilia', cat:'Pizza', tagline:'Pepperoni & oregano', cal:412, rating:4.7, time:27, popular:true, offer:true,
+    img:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80',
+    ingredients:['Stone-baked base','San Marzano sauce','Fior di latte','Pepperoni','Oregano','Olive oil'],
+    sizes:[{label:'9 inch',price:8.99},{label:'12 inch',price:12.49},{label:'16 inch',price:16.99}] },
+  { id:'pasta', name:'Noodles Twistara', cat:'Pasta', tagline:'With spicy sauce', cal:487, rating:4.7, time:29, popular:true, offer:true,
+    img:'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80',
+    ingredients:['Fresh spaghetti','Guanciale','Pecorino','Egg yolk','Black pepper','Truffle oil'],
+    sizes:[{label:'Regular',price:5.33},{label:'Large',price:8.49},{label:'Sharing',price:12.99}] },
+  { id:'salad', name:'Chicken Caesar', cat:'Salad', tagline:'Romaine & parmesan', cal:186, rating:4.6, time:40, popular:false, offer:true,
+    img:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80',
+    ingredients:['Grilled chicken','Romaine','Shaved parmesan','Croutons','Caesar dressing'],
+    sizes:[{label:'Side',price:6.49},{label:'Regular',price:8.99},{label:'Large',price:11.49}] },
+  { id:'sushi', name:'Salmon Roll Set', cat:'Sushi', tagline:'Eight pieces, sesame', cal:324, rating:4.9, time:35, popular:true, offer:false,
+    img:'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80',
+    ingredients:['Sushi rice','Norwegian salmon','Nori','Avocado','Sesame','Soy and wasabi'],
+    sizes:[{label:'8 pieces',price:12.99},{label:'12 pieces',price:16.99},{label:'18 pieces',price:22.99}] },
+  { id:'steak', name:'Ribeye & Fries', cat:'Grill', tagline:'Peppercorn sauce', cal:642, rating:4.8, time:44, popular:false, offer:false,
+    img:'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800&q=80',
+    ingredients:['250g ribeye','Rosemary butter','Sea salt','Hand-cut fries','Peppercorn sauce'],
+    sizes:[{label:'250g',price:22.99},{label:'350g',price:27.99},{label:'450g',price:33.49}] },
+  { id:'wrap', name:'Veggie Wrap', cat:'Wrap', tagline:'Falafel & tahini', cal:243, rating:4.5, time:25, popular:false, offer:true,
+    img:'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=800&q=80',
+    ingredients:['Spinach tortilla','Falafel','Hummus','Cucumber','Red cabbage','Tahini'],
+    sizes:[{label:'Single',price:7.99},{label:'Double',price:10.49},{label:'Meal',price:12.99}] },
+  { id:'taco', name:'Street Tacos', cat:'Grill', tagline:'Carne asada, salsa verde', cal:298, rating:4.6, time:22, popular:true, offer:true,
+    img:'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80',
+    ingredients:['Corn tortillas','Carne asada','White onion','Cilantro','Lime','Salsa verde'],
+    sizes:[{label:'3 tacos',price:9.49},{label:'5 tacos',price:13.49},{label:'8 tacos',price:19.49}] },
+  { id:'fries', name:'Loaded Fries', cat:'Snack', tagline:'Cheese sauce & bacon', cal:512, rating:4.4, time:18, popular:false, offer:true,
+    img:'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80',
+    ingredients:['Skin-on fries','Cheese sauce','Crispy bacon','Spring onion','Chipotle mayo'],
+    sizes:[{label:'Small',price:4.99},{label:'Regular',price:6.49},{label:'Sharing',price:8.99}] },
+  { id:'dessert', name:'Chocolate Cake', cat:'Dessert', tagline:'Ganache & cocoa nibs', cal:389, rating:4.9, time:20, popular:true, offer:false,
+    img:'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80',
+    ingredients:['Dark chocolate sponge','Ganache','Cocoa nibs','Vanilla cream'],
+    sizes:[{label:'Slice',price:5.49},{label:'Double slice',price:8.99},{label:'Whole cake',price:24.99}] }
+];
+
+const CATS = [
+  { label:'All', icon:ICONS.all }, { label:'Burger', icon:ICONS.burger }, { label:'Pizza', icon:ICONS.pizza },
+  { label:'Pasta', icon:ICONS.pasta }, { label:'Salad', icon:ICONS.salad }, { label:'Sushi', icon:ICONS.sushi },
+  { label:'Grill', icon:ICONS.grill }, { label:'Wrap', icon:ICONS.wrap }, { label:'Snack', icon:ICONS.snack },
+  { label:'Dessert', icon:ICONS.dessert }
+];
+
+const LANGS = [
+  { code:'EN', name:'English' }, { code:'RU', name:'Русский' }, { code:'AR', name:'العربية' },
+  { code:'FR', name:'Français' }, { code:'ES', name:'Español' }
+];
+
+const VEG = ['salad','wrap','fries','dessert'];
+const SPICY = ['pasta','taco','fries'];
+const F_ICONS = {
+  leaf: 'M20 4c0 9-5.5 13-11 13a5 5 0 0 1 0-10c4 0 6-1 11-3zM4 20c2-5 5-7 9-9',
+  tag: 'M12.5 3.5H20V11l-9 9-7.5-7.5zM16.5 7.5v.01',
+  star: 'm12 3.5 2.6 5.6 6.1.7-4.5 4.1 1.2 6-5.4-2.9-5.4 2.9 1.2-6-4.5-4.1 6.1-.7z'
+};
+
+const money = n => '$ ' + n.toFixed(2);
+
+class Component extends DCLogic {
+  state = { screen:'home', cat:'All', tab:'All items', detailId:'burger', size:0, qty:1, cart:{}, fav:{ burger:true }, query:'', toast:'', lang:0, infoOpen:false,
+    filtersOpen:false, fMin:'', fMax:'', fPrep:0, fSpice:'any', fVeg:false, fOffer:false, fHit:false };
+
+  flash(msg) {
+    clearTimeout(this._t);
+    this.setState({ toast: msg });
+    this._t = setTimeout(() => this.setState({ toast: '' }), 1600);
+  }
+  go(screen) { this.setState({ screen }); }
+  addToCart(dish, sizeIdx, qty) {
+    const key = dish.id + '|' + sizeIdx;
+    this.setState(s => {
+      const cart = Object.assign({}, s.cart);
+      cart[key] = { id: dish.id, size: sizeIdx, qty: (cart[key] ? cart[key].qty : 0) + qty };
+      return { cart };
+    });
+    this.flash(dish.name + ' added to your order');
+  }
+  bump(key, delta) {
+    this.setState(s => {
+      const cart = Object.assign({}, s.cart);
+      if (!cart[key]) return {};
+      const q = cart[key].qty + delta;
+      if (q <= 0) delete cart[key]; else cart[key] = Object.assign({}, cart[key], { qty: q });
+      return { cart };
+    });
+  }
+  inCart(id) { return Object.keys(this.state.cart).some(k => k.split('|')[0] === id); }
+  toggleFav(id, name) {
+    const on = !this.state.fav[id];
+    this.setState(s => { const fav = Object.assign({}, s.fav); fav[id] = on; return { fav }; });
+    this.flash(on ? name + ' saved to favorites' : name + ' removed from favorites');
+  }
+
+  view(d) {
+    const fav = !!this.state.fav[d.id];
+    const inCart = this.inCart(d.id);
+    return Object.assign({}, d, {
+      priceNum: d.sizes[0].price.toFixed(2),
+      heartFill: fav ? '#FF5722' : 'none',
+      heartStroke: fav ? '#FF5722' : '#141414',
+      addBg: inCart ? '#141414' : '#FF5722',
+      addPath: inCart ? 'm5 13 4 4 10-10' : 'M12 5v14M5 12h14',
+      onOpen: () => this.setState({ screen:'detail', detailId:d.id, size:0, qty:1 }),
+      onFav: (e) => { if (e) e.stopPropagation(); this.toggleFav(d.id, d.name); },
+      onAdd: (e) => { if (e) e.stopPropagation(); this.addToCart(d, 0, 1); }
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const q = s.query.trim().toLowerCase();
+    const match = d => !q || d.name.toLowerCase().includes(q) || d.cat.toLowerCase().includes(q) || d.tagline.toLowerCase().includes(q);
+    const tabFilter = d => s.tab === 'Popular' ? d.popular : s.tab === 'Offers' ? d.offer : true;
+    const catFilter = d => s.cat === 'All' || d.cat === s.cat;
+    const min = s.fMin === '' ? 0 : parseFloat(s.fMin) || 0;
+    const max = s.fMax === '' ? Infinity : parseFloat(s.fMax) || Infinity;
+    const advFilter = d => {
+      const p = d.sizes[0].price;
+      if (p < min || p > max) return false;
+      if (s.fPrep && d.time > s.fPrep) return false;
+      if (s.fSpice === 'spicy' && SPICY.indexOf(d.id) < 0) return false;
+      if (s.fSpice === 'mild' && SPICY.indexOf(d.id) >= 0) return false;
+      if (s.fVeg && VEG.indexOf(d.id) < 0) return false;
+      if (s.fOffer && !d.offer) return false;
+      if (s.fHit && !d.popular) return false;
+      return true;
+    };
+    const filterCount = (s.fMin !== '' || s.fMax !== '' ? 1 : 0) + (s.fPrep ? 1 : 0) +
+      (s.fSpice !== 'any' ? 1 : 0) + (s.fVeg ? 1 : 0) + (s.fOffer ? 1 : 0) + (s.fHit ? 1 : 0);
+
+    const cartItems = Object.keys(s.cart).map(key => {
+      const c = s.cart[key];
+      const d = DISHES.find(x => x.id === c.id);
+      const unit = d.sizes[c.size].price;
+      return { key, name:d.name, img:d.img, qty:c.qty, sizeLabel:d.sizes[c.size].label,
+        unitLabel: money(unit), lineLabel: money(unit * c.qty),
+        onInc: () => this.bump(key, 1), onDec: () => this.bump(key, -1) };
+    });
+    const cartCount = cartItems.reduce((a, c) => a + c.qty, 0);
+    const subtotal = Object.keys(s.cart).reduce((a, k) => {
+      const c = s.cart[k]; const d = DISHES.find(x => x.id === c.id);
+      return a + d.sizes[c.size].price * c.qty;
+    }, 0);
+
+    const dish = DISHES.find(d => d.id === s.detailId) || DISHES[0];
+    const unit = dish.sizes[s.size].price;
+    const menuList = DISHES.filter(d => tabFilter(d) && catFilter(d) && match(d) && advFilter(d)).map(d => this.view(d));
+    const homeList = DISHES.filter(d => catFilter(d) && match(d) && advFilter(d)).map(d => this.view(d));
+    const favList = DISHES.filter(d => s.fav[d.id]).map(d => this.view(d));
+    const lang = LANGS[s.lang];
+
+    return {
+      isHome: s.screen === 'home', isMenu: s.screen === 'menu', isDetail: s.screen === 'detail',
+      isCart: s.screen === 'cart', isFav: s.screen === 'fav',
+      showNav: s.screen !== 'detail',
+      showCartBar: cartCount > 0 && (s.screen === 'home' || s.screen === 'menu' || s.screen === 'fav'),
+      restaurantName: this.props.restaurantName || 'Olive & Ember',
+      tableLabel: this.props.tableLabel || 'Table 12',
+      query: s.query,
+      onQuery: e => this.setState({ query: e.target.value }),
+      goHome: () => this.go('home'), goMenu: () => this.go('menu'), goCart: () => this.go('cart'), goFav: () => this.go('fav'),
+      closeDetail: () => this.go('menu'),
+
+      langCode: lang.code,
+      cycleLang: () => {
+        const next = (s.lang + 1) % LANGS.length;
+        this.setState({ lang: next });
+        this.flash('Language · ' + LANGS[next].name);
+      },
+      infoOpen: s.infoOpen,
+      openInfo: () => this.setState({ infoOpen: true }),
+      closeInfo: () => this.setState({ infoOpen: false }),
+
+      filtersOpen: s.filtersOpen,
+      openFilters: () => this.setState({ filtersOpen: true }),
+      closeFilters: () => this.setState({ filtersOpen: false }),
+      stopClick: e => e.stopPropagation(),
+      filterCount, hasFilters: filterCount > 0,
+      priceMin: s.fMin, priceMax: s.fMax,
+      onPriceMin: e => this.setState({ fMin: e.target.value }),
+      onPriceMax: e => this.setState({ fMax: e.target.value }),
+      prepOpts: [{ label:'Any', v:0 }, { label:'Up to 15 min', v:15 }, { label:'Up to 30 min', v:30 }].map(o => ({
+        label: o.label,
+        bg: s.fPrep === o.v ? '#141414' : '#FFFFFF',
+        fg: s.fPrep === o.v ? '#FFFFFF' : '#5C544F',
+        border: s.fPrep === o.v ? '#141414' : '#EDE8E4',
+        onPick: () => this.setState({ fPrep: o.v })
+      })),
+      spiceOpts: [{ label:'Any', v:'any' }, { label:'Spicy', v:'spicy' }, { label:'Not spicy', v:'mild' }].map(o => ({
+        label: o.label,
+        bg: s.fSpice === o.v ? '#141414' : '#FFFFFF',
+        fg: s.fSpice === o.v ? '#FFFFFF' : '#5C544F',
+        border: s.fSpice === o.v ? '#141414' : '#EDE8E4',
+        onPick: () => this.setState({ fSpice: o.v })
+      })),
+      toggleOpts: [
+        { label:'Vegetarian', icon:F_ICONS.leaf, on:s.fVeg, set:() => this.setState({ fVeg: !s.fVeg }) },
+        { label:'With a discount', icon:F_ICONS.tag, on:s.fOffer, set:() => this.setState({ fOffer: !s.fOffer }) },
+        { label:'Recommended', icon:F_ICONS.star, on:s.fHit, set:() => this.setState({ fHit: !s.fHit }) }
+      ].map(o => ({
+        label: o.label, icon: o.icon,
+        bg: o.on ? '#FF5722' : '#FFFFFF',
+        fg: o.on ? '#FFFFFF' : '#5C544F',
+        border: o.on ? '#FF5722' : '#EDE8E4',
+        onToggle: o.set
+      })),
+      resetFilters: () => this.setState({ fMin:'', fMax:'', fPrep:0, fSpice:'any', fVeg:false, fOffer:false, fHit:false }),
+
+      navHomeBg: s.screen === 'home' ? '#FF5722' : 'transparent',
+      navHomeFg: s.screen === 'home' ? '#ffffff' : '#8B8580',
+      navMenuBg: s.screen === 'menu' ? '#FF5722' : 'transparent',
+      navMenuFg: s.screen === 'menu' ? '#ffffff' : '#8B8580',
+      navFavBg: s.screen === 'fav' ? '#FF5722' : 'transparent',
+      navFavFg: s.screen === 'fav' ? '#ffffff' : '#8B8580',
+      navCartBg: s.screen === 'cart' ? '#FF5722' : 'transparent',
+      navCartFg: s.screen === 'cart' ? '#ffffff' : '#8B8580',
+
+      cats: CATS.map(c => {
+        const on = s.cat === c.label;
+        return { label:c.label, icon:c.icon,
+          dim: on ? '62px' : '52px', iconSize: on ? '27px' : '22px',
+          iconStroke: on ? '#FF5722' : '#141414',
+          underline: on ? '#141414' : 'transparent',
+          weight: on ? '800' : '500',
+          fg: on ? '#141414' : '#A79F99',
+          onPick: () => this.setState({ cat: c.label }) };
+      }),
+      chips: CATS.map(c => {
+        const on = s.cat === c.label;
+        return { label:c.label, icon:c.icon,
+          bg: on ? '#141414' : '#FFFFFF', fg: on ? '#FFFFFF' : '#5C544F',
+          border: on ? '#141414' : '#EDE8E4',
+          onPick: () => this.setState({ cat: c.label }) };
+      }),
+      tabs: ['All items','Popular','Offers'].map(t => ({ label:t,
+        bg: s.tab === t ? '#141414' : '#FFFFFF',
+        fg: s.tab === t ? '#ffffff' : '#A79F99',
+        onPick: () => this.setState({ tab: t }) })),
+      gridTitle: (s.cat === 'All' ? 'Everything' : s.cat) + ' · ' + menuList.length + ' dishes',
+
+      filterResultLabel: 'Show ' + (s.screen === 'menu' ? menuList.length : homeList.length) + ' dishes',
+      homeList, menuList, favList,
+      favCount: favList.length, hasFavs: favList.length > 0, noFavs: favList.length === 0,
+      favCountLabel: favList.length + (favList.length === 1 ? ' saved dish' : ' saved dishes'),
+
+      dish: this.view(dish),
+      detailFav: () => this.toggleFav(dish.id, dish.name),
+      ingredients: dish.ingredients.map(t => ({ text: t })),
+      sizeOpts: dish.sizes.map((z, i) => ({ label: z.label, priceLabel: money(z.price),
+        checked: i === s.size, ring: i === s.size ? '#FF5722' : '#D8D2CD', dotBg: i === s.size ? '#FF5722' : 'transparent',
+        onPick: () => this.setState({ size: i }) })),
+      selectedPriceLabel: money(unit),
+      qty: s.qty,
+      incQty: () => this.setState(p => ({ qty: p.qty + 1 })),
+      decQty: () => this.setState(p => ({ qty: Math.max(1, p.qty - 1) })),
+      detailTotalLabel: money(unit * s.qty),
+      addDetailToCart: () => { this.addToCart(dish, s.size, s.qty); this.go('menu'); },
+
+      cartItems, cartCount, hasCart: cartCount > 0, cartEmpty: cartCount === 0,
+      subtotalLabel: money(subtotal),
+      serviceLabel: money(subtotal * 0.1),
+      totalLabel: money(subtotal * 1.1),
+      orderLabel: 'Send to kitchen · ' + cartCount + ' item' + (cartCount === 1 ? '' : 's'),
+      placeOrder: () => { this.setState({ cart:{}, screen:'home' }); this.flash('Order sent to the kitchen'); },
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

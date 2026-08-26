@@ -1,22 +1,45 @@
-# CODING AGENTS: READ THIS FIRST
+# Video E-Menu — Nauryz demo
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+A QR dine-in e-menu built as a demo product ("Video E-Menu") to show to
+restaurants. Content is real data for **Nauryz** (Astana, sourced from 2GIS),
+used as a realistic worked example.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+**Live:** https://app-smoky-two-48.vercel.app
+**Admin:** https://app-smoky-two-48.vercel.app/admin.html
 
-## What you should do — IMPORTANT
+## Stack
 
-**Read `restaurant-e-menu-web-app/project/E-Menu v2.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+- Frontend: vanilla HTML/CSS/JS, no build step, responsive (mobile/tablet/desktop)
+- Hosting: Vercel (serverless functions + static)
+- Database: Postgres via Vercel/Neon — `restaurants` / `categories` / `dishes` / `dish_sizes`, everything scoped by `restaurant_id`
+- File storage: Vercel Blob (public) — dish photos and short looping videos
+- Orders: posted live to a Telegram group via a bot
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+## Repo layout
 
-## About the design files
+- `app/` — the actual deployed project (Vercel root directory is set to this folder)
+  - `index.html`, `app.js`, `styles.css` — the guest-facing menu
+  - `admin.html`, `admin.js` — password-protected menu editor
+  - `api/` — serverless functions (menu read, order → Telegram, admin CRUD, auth, video upload)
+  - `db/schema.sql`, `db/seed.mjs` — schema and the one-time migration of the original 2GIS menu data
+- `project/` — the original Claude Design handoff bundle (HTML/CSS/JS mockup) this app was built from
+- `videos/` — source cinemagraph clips generated externally, uploaded to Vercel Blob and linked to dishes
+- `marketing/` — QR code for the demo link
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+## Local development
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+```bash
+cd app
+npm install
+vercel dev
+```
 
-## Bundle contents
+Requires `.env.local` with `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`,
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `ADMIN_PASSWORD`,
+`ADMIN_SESSION_SECRET` — pull the real values with `vercel env pull .env.local`
+(never commit them; see `app/.env.example` for the shape).
 
-- `restaurant-e-menu-web-app/README.md` — this file
-- `restaurant-e-menu-web-app/project/` — the `Restaurant E-Menu Web App` project files (HTML prototypes, assets, components)
+## Deploying
+
+Pushing to `main` deploys automatically via the connected GitHub repo. No
+manual `vercel --prod` needed anymore.

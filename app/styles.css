@@ -453,6 +453,8 @@ main { padding-top: 4px; }
   border-radius: 28px 28px 0 0; padding: 22px 24px 30px; animation: scrIn .2s ease; box-sizing: border-box;
 }
 @media (min-width: 640px) { .modal { border-radius: 28px; margin-bottom: 40px; } .modal-backdrop { align-items: center; } }
+.modal-backdrop-center { align-items: center; padding: 24px 16px; }
+.modal-backdrop-center .modal { border-radius: 28px; max-height: 84vh; margin-bottom: 0; }
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .modal-title-row { display: flex; align-items: center; gap: 8px; }
 .modal-title { font-size: 19px; font-weight: 900; color: var(--ink); letter-spacing: -0.3px; }

@@ -85,7 +85,11 @@ const I18N = {
     prepLabel: 'Время готовки', prepAny: 'Любое', prepUpTo15: 'До 15 мин', prepUpTo30: 'До 30 мин',
     spicyLabel: 'Острое', spicyAny: 'Любое', spicySpicy: 'Острое', spicyMild: 'Не острое',
     alsoShowLabel: 'Также показать только', vegOnly: 'Вегетарианское', offerOnly: 'Со скидкой', recommendedOnly: 'Рекомендуем',
-    sortBtnLabel: 'Сортировка'
+    sortBtnLabel: 'Сортировка',
+    randomBtnTitle: 'Случайное блюдо', randomModalTitle: 'Случайный выбор',
+    randomSlotMain: 'Основное', randomSlotDrink: 'Напиток', randomSlotDessert: 'Десерт',
+    spinAgain: 'Крутить ещё раз', addAllToCart: 'Добавить всё в заказ', addedAllToCart: 'добавлено в заказ',
+    goesWellTitle: 'С этим блюдом заказывают'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -115,7 +119,11 @@ const I18N = {
     prepLabel: 'Prep time', prepAny: 'Any', prepUpTo15: 'Up to 15 min', prepUpTo30: 'Up to 30 min',
     spicyLabel: 'Spicy', spicyAny: 'Any', spicySpicy: 'Spicy', spicyMild: 'Not spicy',
     alsoShowLabel: 'Also show only', vegOnly: 'Vegetarian', offerOnly: 'With a discount', recommendedOnly: 'Recommended',
-    sortBtnLabel: 'Sort'
+    sortBtnLabel: 'Sort',
+    randomBtnTitle: 'Random dish', randomModalTitle: 'Random pick',
+    randomSlotMain: 'Main', randomSlotDrink: 'Drink', randomSlotDessert: 'Dessert',
+    spinAgain: 'Spin again', addAllToCart: 'Add all to order', addedAllToCart: 'added to your order',
+    goesWellTitle: 'Goes well with this'
   }
 };
 
@@ -213,8 +221,9 @@ function tabLabel(key) { return key === 'popular' ? t('tabPopular') : key === 'o
 const state = {
   screen: 'home', cat: CAT_ALL, tab: TABS[0], detailId: null, size: 0, qty: 1,
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
-  infoOpen: false, filtersOpen: false, sortOpen: false, fMin: '', fMax: '',
-  fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default'
+  infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, fMin: '', fMax: '',
+  fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default',
+  suggestId: null, suggestList: []
 };
 
 let toastTimer = null;
@@ -259,6 +268,136 @@ function toggleFav(dish) {
   state.fav[dish.id] = on;
   flash(dish.name + ' ' + (on ? t('savedToFav') : t('removedFromFav')));
   renderAll();
+}
+
+/* ------------------------------------------------------------ recommendations --------------------------------------------------------- */
+/* No order-history data to learn real pairings from, so this is a fixed
+   category-complementarity map (a soup suggests salads/drinks, a dessert
+   suggests coffee, etc). "Посуда с собой" is never suggested — it's takeaway
+   packaging, not a dish. */
+
+const COMPLEMENT_CATS = {
+  'Первые блюда': ['Салаты', 'Горячие закуски', 'Чаи', 'Десерты'],
+  'Вторые блюда': ['Салаты', 'Гарниры', 'Соусы', 'Лимонады'],
+  'Завтраки': ['Кофе', 'Чаи', 'Десерты'],
+  'Пицца': ['Соусы', 'Лимонады', 'Салаты'],
+  'Салаты': ['Первые блюда', 'Вторые блюда', 'Лимонады'],
+  'Горячие закуски': ['Соусы', 'Лимонады', 'Молочные коктейли'],
+  'Каши': ['Кофе', 'Чаи'],
+  'Десерты': ['Кофе', 'Чаи', 'Молочные коктейли'],
+  'Гарниры': ['Вторые блюда', 'Соусы'],
+  'Соусы': ['Вторые блюда', 'Горячие закуски', 'Пицца'],
+  'Кофе': ['Десерты'],
+  'Молочные коктейли': ['Десерты'],
+  'Лимонады': ['Десерты', 'Пицца'],
+  'Чаи': ['Десерты']
+};
+
+function getComplementaryDishes(dish, count) {
+  const seen = new Set([dish.id]);
+  const picks = [];
+  for (const cat of COMPLEMENT_CATS[dish.cat] || []) {
+    const pool = DISHES.filter(d => d.cat === cat && d.available && !seen.has(d.id));
+    if (!pool.length) continue;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    seen.add(pick.id);
+    picks.push(pick);
+    if (picks.length >= count) return picks;
+  }
+  const fallback = DISHES.filter(d => d.cat !== 'Посуда с собой' && d.available && d.popular && !seen.has(d.id));
+  fallback.sort(() => Math.random() - 0.5);
+  for (const d of fallback) {
+    if (picks.length >= count) break;
+    seen.add(d.id);
+    picks.push(d);
+  }
+  return picks;
+}
+
+/* ------------------------------------------------------------- random picker ----------------------------------------------------------- */
+
+const RANDOM_SLOTS = [
+  { cats: ['Первые блюда', 'Вторые блюда', 'Пицца'], labelKey: 'randomSlotMain' },
+  { cats: ['Кофе', 'Молочные коктейли', 'Лимонады', 'Чаи'], labelKey: 'randomSlotDrink' },
+  { cats: ['Десерты'], labelKey: 'randomSlotDessert' }
+];
+
+function openRandomPicker() {
+  state.randomOpen = true;
+  renderModals();
+  runRandomSpin();
+}
+function closeRandomPicker() {
+  state.randomOpen = false;
+  renderModals();
+}
+
+function reelCardHtml(d) {
+  return `<div class="reel-thumb">${mediaHtml(d, '', 22)}</div>
+    <div class="reel-name">${esc(d.name)}</div>
+    <div class="reel-price">${money(d.sizes[0].price)}</div>`;
+}
+
+function spinReel(cardEl, pool, finalPick, durationMs) {
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    if (elapsed >= durationMs || !document.body.contains(cardEl)) {
+      cardEl.innerHTML = reelCardHtml(finalPick);
+      return;
+    }
+    cardEl.innerHTML = reelCardHtml(pool[Math.floor(Math.random() * pool.length)]);
+    const delay = 60 + (elapsed / durationMs) * 220;
+    setTimeout(() => requestAnimationFrame(tick), delay);
+  }
+  requestAnimationFrame(tick);
+}
+
+function runRandomSpin() {
+  byId('randomResult').hidden = true;
+  byId('randomActions').hidden = true;
+
+  const reelsEl = byId('randomReels');
+  reelsEl.innerHTML = RANDOM_SLOTS.map((slot, i) => `
+    <div class="reel">
+      <div class="reel-label">${esc(t(slot.labelKey))}</div>
+      <div class="reel-window" id="reel-window-${i}"></div>
+    </div>`).join('');
+
+  const picks = [];
+  RANDOM_SLOTS.forEach((slot, i) => {
+    const pool = DISHES.filter(d => slot.cats.includes(d.cat) && d.available);
+    const windowEl = byId('reel-window-' + i);
+    if (!pool.length) {
+      windowEl.innerHTML = '<span class="reel-empty">—</span>';
+      return;
+    }
+    const finalPick = pool[Math.floor(Math.random() * pool.length)];
+    picks.push(finalPick);
+    const cardEl = document.createElement('div');
+    windowEl.appendChild(cardEl);
+    spinReel(cardEl, pool, finalPick, 700 + i * 350);
+  });
+
+  setTimeout(() => showRandomResult(picks), 700 + (RANDOM_SLOTS.length - 1) * 350 + 150);
+}
+
+function showRandomResult(picks) {
+  const resultEl = byId('randomResult');
+  resultEl.hidden = false;
+  resultEl.innerHTML = picks.map(rowCardHtml).join('');
+  bindDishCardEvents(resultEl);
+
+  byId('randomActions').hidden = false;
+  byId('randomAgainBtn').textContent = t('spinAgain');
+  byId('randomAddAllBtn').textContent = t('addAllToCart');
+  byId('randomAgainBtn').onclick = runRandomSpin;
+  byId('randomAddAllBtn').onclick = () => {
+    picks.forEach(d => addToCart(d, 0, 1));
+    flash(t('addedAllToCart'));
+    closeRandomPicker();
+    renderAll();
+  };
 }
 
 /* ------------------------------------------------------------- persistence ------------------------------------------------------------- */
@@ -688,6 +827,12 @@ function renderDetailScreen() {
   const hasSizes = dish.sizes.length > 1;
   const hasStats = dish.rating !== undefined;
 
+  if (state.suggestId !== dish.id) {
+    state.suggestId = dish.id;
+    state.suggestList = getComplementaryDishes(dish, 6);
+  }
+  const suggestions = state.suggestList;
+
   byId('detailContent').innerHTML = `
     <div class="detail-top">
       <button type="button" class="icon-btn" id="detailCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
@@ -740,7 +885,18 @@ function renderDetailScreen() {
           </div>` : `<span class="detail-add-btn detail-add-btn-disabled">${t('unavailable')}</span>`}
         </div>
       </div>
-    </div>`;
+    </div>
+    ${suggestions.length ? `
+    <div class="detail-suggest">
+      <div class="section-title-row">
+        <h2>${esc(t('goesWellTitle'))}</h2>
+      </div>
+      <div class="suggest-row" id="detailSuggestRow">
+        ${suggestions.map(dishCardHtml).join('')}
+      </div>
+    </div>` : ''}`;
+
+  if (suggestions.length) bindDishCardEvents(byId('detailSuggestRow'));
 
   byId('detailCloseBtn').onclick = () => go('menu');
   byId('detailInfoBtn').onclick = () => { state.infoOpen = true; renderModals(); };
@@ -844,6 +1000,9 @@ function renderModals() {
   document.querySelectorAll('#sortList [data-sort]').forEach(b => b.addEventListener('click', () => {
     state.sortBy = b.getAttribute('data-sort'); state.sortOpen = false; renderAll();
   }));
+
+  byId('randomBackdrop').hidden = !state.randomOpen;
+  byId('randomModalTitle').textContent = t('randomModalTitle');
 }
 
 /* ---------------------------------------------------------------- init ---------------------------------------------------------------- */
@@ -877,6 +1036,10 @@ function bindStaticEvents() {
   byId('sortBtn').addEventListener('click', () => { state.sortOpen = true; renderModals(); });
   byId('sortCloseBtn').addEventListener('click', () => { state.sortOpen = false; renderModals(); });
   byId('sortBackdrop').addEventListener('click', e => { if (e.target.id === 'sortBackdrop') { state.sortOpen = false; renderModals(); } });
+
+  byId('randomBtn').addEventListener('click', openRandomPicker);
+  byId('randomCloseBtn').addEventListener('click', closeRandomPicker);
+  byId('randomBackdrop').addEventListener('click', e => { if (e.target.id === 'randomBackdrop') closeRandomPicker(); });
 }
 
 async function loadMenu() {

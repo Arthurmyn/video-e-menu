@@ -324,6 +324,7 @@ main { padding-top: 4px; }
 .empty-icon { width: 64px; height: 64px; margin: 0 auto; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center; }
 .empty-title { font-size: 16px; font-weight: 800; color: var(--ink); margin-top: 14px; }
 .empty-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.empty-state .btn-dark { margin-top: 20px; }
 .btn-dark {
   border: none; font-family: inherit; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700;
   padding: 13px 24px; border-radius: 999px; cursor: pointer; transition: background .2s ease;

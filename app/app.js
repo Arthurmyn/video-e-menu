@@ -79,7 +79,12 @@ const I18N = {
     gotIt: 'Понятно', filters: 'Фильтры', price: 'Цена', from: 'От', to: 'До', reset: 'Сбросить',
     addToOrder: 'Добавить в заказ', portion: 'Порция',
     rating: 'Рейтинг', cookTime: 'Готовка', category: 'Категория', kcal: 'ккал', min: 'мин',
-    unavailable: 'Нет в наличии', unavailableNow: 'Сейчас нет в наличии'
+    unavailable: 'Нет в наличии', unavailableNow: 'Сейчас нет в наличии',
+    sortLabel: 'Сортировка', sortDefault: 'По умолчанию', sortPriceAsc: 'Сначала дешёвые',
+    sortPriceDesc: 'Сначала дорогие', sortRating: 'Сначала с высоким рейтингом',
+    prepLabel: 'Время готовки', prepAny: 'Любое', prepUpTo15: 'До 15 мин', prepUpTo30: 'До 30 мин',
+    ratingLabel: 'Рейтинг', ratingAny: 'Любой', ratingFrom40: 'От 4.0', ratingFrom45: 'От 4.5',
+    availLabel: 'Наличие', availOnly: 'Только в наличии'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -103,7 +108,12 @@ const I18N = {
     gotIt: 'Got it', filters: 'Filters', price: 'Price', from: 'From', to: 'To', reset: 'Reset',
     addToOrder: 'Add to order', portion: 'Portion',
     rating: 'Rating', cookTime: 'Cook time', category: 'Category', kcal: 'kcal', min: 'min',
-    unavailable: 'Sold out', unavailableNow: 'Currently sold out'
+    unavailable: 'Sold out', unavailableNow: 'Currently sold out',
+    sortLabel: 'Sort by', sortDefault: 'Default', sortPriceAsc: 'Price: low to high',
+    sortPriceDesc: 'Price: high to low', sortRating: 'Highest rated first',
+    prepLabel: 'Prep time', prepAny: 'Any', prepUpTo15: 'Up to 15 min', prepUpTo30: 'Up to 30 min',
+    ratingLabel: 'Rating', ratingAny: 'Any', ratingFrom40: '4.0+', ratingFrom45: '4.5+',
+    availLabel: 'Availability', availOnly: 'In stock only'
   }
 };
 
@@ -198,7 +208,8 @@ function tabLabel(key) { return key === 'popular' ? t('tabPopular') : key === 'o
 const state = {
   screen: 'home', cat: CAT_ALL, tab: TABS[0], detailId: null, size: 0, qty: 1,
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
-  infoOpen: false, filtersOpen: false, fMin: '', fMax: ''
+  infoOpen: false, filtersOpen: false, fMin: '', fMax: '',
+  fPrep: 0, fMinRating: 0, fAvailableOnly: false, sortBy: 'default'
 };
 
 let toastTimer = null;
@@ -322,8 +333,28 @@ function matchesPrice(d) {
   const p = d.sizes[0].price;
   return p >= min && p <= max;
 }
+function matchesPrepTime(d) {
+  if (!state.fPrep) return true;
+  return d.time !== undefined && d.time <= state.fPrep;
+}
+function matchesMinRating(d) {
+  if (!state.fMinRating) return true;
+  return d.rating !== undefined && Number(d.rating) >= state.fMinRating;
+}
+function matchesAvailability(d) {
+  return !state.fAvailableOnly || d.available;
+}
+function sortList(list) {
+  if (state.sortBy === 'default') return list;
+  const arr = list.slice();
+  if (state.sortBy === 'price-asc') arr.sort((a, b) => a.sizes[0].price - b.sizes[0].price);
+  else if (state.sortBy === 'price-desc') arr.sort((a, b) => b.sizes[0].price - a.sizes[0].price);
+  else if (state.sortBy === 'rating-desc') arr.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+  return arr;
+}
 function filterCount() {
-  return (state.fMin !== '' || state.fMax !== '') ? 1 : 0;
+  return (state.fMin !== '' || state.fMax !== '' ? 1 : 0) + (state.fPrep ? 1 : 0) +
+    (state.fMinRating ? 1 : 0) + (state.fAvailableOnly ? 1 : 0);
 }
 function cartEntries() {
   return Object.keys(state.cart).map(key => {
@@ -521,7 +552,9 @@ function renderScreens() {
     byId('screen-' + s).setAttribute('data-active', String(state.screen === s));
   });
 
-  const list = DISHES.filter(d => matchesCat(d) && matchesQuery(d) && matchesPrice(d));
+  const list = sortList(DISHES.filter(d =>
+    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) && matchesMinRating(d) && matchesAvailability(d)
+  ));
 
   // Home
   byId('homeTitle').textContent = catLabel(state.cat) + ' · ' + positionsLabel(list.length);
@@ -757,7 +790,42 @@ function renderModals() {
   byId('priceMinInput').value = state.fMin;
   byId('priceMaxInput').value = state.fMax;
 
-  const resultCount = DISHES.filter(d => matchesCat(d) && matchesQuery(d) && matchesPrice(d) && (state.screen === 'menu' ? matchesTab(d) : true)).length;
+  byId('sortFilterLabel').textContent = t('sortLabel');
+  byId('sortOpts').innerHTML = [
+    { v: 'default', label: t('sortDefault') },
+    { v: 'price-asc', label: t('sortPriceAsc') },
+    { v: 'price-desc', label: t('sortPriceDesc') },
+    { v: 'rating-desc', label: t('sortRating') }
+  ].map(o => `<button type="button" class="opt-btn ${state.sortBy === o.v ? 'active' : ''}" data-sort="${o.v}">${esc(o.label)}</button>`).join('');
+  document.querySelectorAll('#sortOpts [data-sort]').forEach(b => b.addEventListener('click', () => {
+    state.sortBy = b.getAttribute('data-sort'); renderAll();
+  }));
+
+  byId('prepFilterLabel').textContent = t('prepLabel');
+  byId('prepOpts').innerHTML = [
+    { v: 0, label: t('prepAny') }, { v: 15, label: t('prepUpTo15') }, { v: 30, label: t('prepUpTo30') }
+  ].map(o => `<button type="button" class="opt-btn ${state.fPrep === o.v ? 'active' : ''}" data-prep="${o.v}">${esc(o.label)}</button>`).join('');
+  document.querySelectorAll('#prepOpts [data-prep]').forEach(b => b.addEventListener('click', () => {
+    state.fPrep = Number(b.getAttribute('data-prep')); renderAll();
+  }));
+
+  byId('ratingFilterLabel').textContent = t('ratingLabel');
+  byId('ratingOpts').innerHTML = [
+    { v: 0, label: t('ratingAny') }, { v: 4.0, label: t('ratingFrom40') }, { v: 4.5, label: t('ratingFrom45') }
+  ].map(o => `<button type="button" class="opt-btn ${state.fMinRating === o.v ? 'active' : ''}" data-rating="${o.v}">${esc(o.label)}</button>`).join('');
+  document.querySelectorAll('#ratingOpts [data-rating]').forEach(b => b.addEventListener('click', () => {
+    state.fMinRating = Number(b.getAttribute('data-rating')); renderAll();
+  }));
+
+  byId('availFilterLabel').textContent = t('availLabel');
+  byId('availOpts').innerHTML =
+    `<button type="button" class="opt-btn toggle ${state.fAvailableOnly ? 'active' : ''}" id="availOnlyBtn">${esc(t('availOnly'))}</button>`;
+  byId('availOnlyBtn').addEventListener('click', () => { state.fAvailableOnly = !state.fAvailableOnly; renderAll(); });
+
+  const resultCount = DISHES.filter(d =>
+    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) && matchesMinRating(d) && matchesAvailability(d) &&
+    (state.screen === 'menu' ? matchesTab(d) : true)
+  ).length;
   byId('applyFiltersBtn').textContent = (currentLang() === 'en' ? 'Show ' : 'Показать ') + positionsLabel(resultCount);
 }
 
@@ -783,7 +851,7 @@ function bindStaticEvents() {
   byId('filtersBackdrop').addEventListener('click', e => { if (e.target.id === 'filtersBackdrop') { state.filtersOpen = false; renderModals(); } });
   byId('applyFiltersBtn').addEventListener('click', () => { state.filtersOpen = false; renderAll(); });
   byId('resetFiltersBtn').addEventListener('click', () => {
-    Object.assign(state, { fMin: '', fMax: '' });
+    Object.assign(state, { fMin: '', fMax: '', fPrep: 0, fMinRating: 0, fAvailableOnly: false, sortBy: 'default' });
     renderAll();
   });
   byId('priceMinInput').addEventListener('input', e => { state.fMin = e.target.value; renderModals(); });

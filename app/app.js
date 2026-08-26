@@ -332,32 +332,42 @@ function closeRandomPicker() {
   renderModals();
 }
 
-function reelCardHtml(d, spinning) {
-  // While spinning, always use the static poster image — creating and tearing
-  // down a fresh autoplaying <video> on every tick (every ~60-280ms) is wasted
-  // work and can leave a stray composited frame floating above the modal on
-  // some browsers. The real video only ever appears on the final landed pick.
-  const thumb = (!spinning && d.video)
-    ? mediaHtml(d, '', 22)
-    : (d.img ? `<img src="${d.img}" alt="${esc(d.name)}">` : mediaPlaceholder(d.cat, '', 22));
-  return `<div class="reel-thumb">${thumb}</div>
-    <div class="reel-name">${esc(d.name)}</div>
-    <div class="reel-price">${money(d.sizes[0].price)}</div>`;
+const REEL_CELL_H = 64;
+
+function reelCellHtml(d) {
+  // The strip only ever shows static poster images — a real <video> here
+  // would mean dozens of autoplaying elements scrolling past at once.
+  const thumb = d.img ? `<img src="${d.img}" alt="${esc(d.name)}">` : mediaPlaceholder(d.cat, '', 18);
+  return `<div class="reel-cell">
+    <div class="reel-cell-thumb">${thumb}</div>
+    <div class="reel-cell-info">
+      <div class="reel-cell-name">${esc(d.name)}</div>
+      <div class="reel-cell-price">${money(d.sizes[0].price)}</div>
+    </div>
+  </div>`;
 }
 
-function spinReel(cardEl, pool, finalPick, durationMs) {
-  const start = performance.now();
-  function tick(now) {
-    const elapsed = now - start;
-    if (elapsed >= durationMs || !document.body.contains(cardEl)) {
-      cardEl.innerHTML = reelCardHtml(finalPick, false);
-      return;
-    }
-    cardEl.innerHTML = reelCardHtml(pool[Math.floor(Math.random() * pool.length)], true);
-    const delay = 60 + (elapsed / durationMs) * 220;
-    setTimeout(() => requestAnimationFrame(tick), delay);
-  }
-  requestAnimationFrame(tick);
+function spinReel(windowEl, pool, finalPick, durationMs) {
+  // A real casino-style vertical drum: a long strip of random cells scrolls
+  // past behind a 3-row window and decelerates to a stop with the winning
+  // dish centered on the payline, instead of flickering through options.
+  windowEl.classList.remove('landed');
+  const fillerCount = 16 + Math.floor(Math.random() * 6);
+  const strip = [];
+  for (let i = 0; i < fillerCount; i++) strip.push(pool[Math.floor(Math.random() * pool.length)]);
+  strip.push(finalPick);
+  strip.push(pool[Math.floor(Math.random() * pool.length)]); // one more row below the winner, for the window to stay filled
+
+  windowEl.innerHTML = `<div class="reel-strip">${strip.map(reelCellHtml).join('')}</div><div class="reel-payline"></div>`;
+  const stripEl = windowEl.querySelector('.reel-strip');
+  const targetY = -(fillerCount - 1) * REEL_CELL_H;
+
+  requestAnimationFrame(() => {
+    stripEl.style.transition = `transform ${durationMs}ms cubic-bezier(0.09, 0.72, 0.18, 1)`;
+    stripEl.style.transform = `translateY(${targetY}px)`;
+  });
+
+  setTimeout(() => windowEl.classList.add('landed'), durationMs);
 }
 
 function runRandomSpin() {
@@ -371,6 +381,7 @@ function runRandomSpin() {
       <div class="reel-window" id="reel-window-${i}"></div>
     </div>`).join('');
 
+  const durations = [1500, 1850, 2200];
   const picks = [];
   RANDOM_SLOTS.forEach((slot, i) => {
     const pool = DISHES.filter(d => slot.cats.includes(d.cat) && d.available);
@@ -381,12 +392,10 @@ function runRandomSpin() {
     }
     const finalPick = pool[Math.floor(Math.random() * pool.length)];
     picks.push(finalPick);
-    const cardEl = document.createElement('div');
-    windowEl.appendChild(cardEl);
-    spinReel(cardEl, pool, finalPick, 700 + i * 350);
+    spinReel(windowEl, pool, finalPick, durations[i] || 1500);
   });
 
-  setTimeout(() => showRandomResult(picks), 700 + (RANDOM_SLOTS.length - 1) * 350 + 150);
+  setTimeout(() => showRandomResult(picks), Math.max(...durations) + 200);
 }
 
 function showRandomResult(picks) {

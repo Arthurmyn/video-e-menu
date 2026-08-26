@@ -332,8 +332,15 @@ function closeRandomPicker() {
   renderModals();
 }
 
-function reelCardHtml(d) {
-  return `<div class="reel-thumb">${mediaHtml(d, '', 22)}</div>
+function reelCardHtml(d, spinning) {
+  // While spinning, always use the static poster image — creating and tearing
+  // down a fresh autoplaying <video> on every tick (every ~60-280ms) is wasted
+  // work and can leave a stray composited frame floating above the modal on
+  // some browsers. The real video only ever appears on the final landed pick.
+  const thumb = (!spinning && d.video)
+    ? mediaHtml(d, '', 22)
+    : (d.img ? `<img src="${d.img}" alt="${esc(d.name)}">` : mediaPlaceholder(d.cat, '', 22));
+  return `<div class="reel-thumb">${thumb}</div>
     <div class="reel-name">${esc(d.name)}</div>
     <div class="reel-price">${money(d.sizes[0].price)}</div>`;
 }
@@ -343,10 +350,10 @@ function spinReel(cardEl, pool, finalPick, durationMs) {
   function tick(now) {
     const elapsed = now - start;
     if (elapsed >= durationMs || !document.body.contains(cardEl)) {
-      cardEl.innerHTML = reelCardHtml(finalPick);
+      cardEl.innerHTML = reelCardHtml(finalPick, false);
       return;
     }
-    cardEl.innerHTML = reelCardHtml(pool[Math.floor(Math.random() * pool.length)]);
+    cardEl.innerHTML = reelCardHtml(pool[Math.floor(Math.random() * pool.length)], true);
     const delay = 60 + (elapsed / durationMs) * 220;
     setTimeout(() => requestAnimationFrame(tick), delay);
   }

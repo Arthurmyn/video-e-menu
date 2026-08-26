@@ -11,7 +11,8 @@ const MAX_LABEL = 40;
 
 const FIELD_COLUMN = {
   name: 'name', categoryId: 'category_id', imgUrl: 'img_url', videoUrl: 'video_url', rating: 'rating',
-  cal: 'cal', time: 'time_min', popular: 'popular', offerPct: 'offer_pct', available: 'available'
+  cal: 'cal', time: 'time_min', popular: 'popular', offerPct: 'offer_pct', available: 'available',
+  spicy: 'is_spicy', vegetarian: 'is_vegetarian'
 };
 
 module.exports = async (req, res) => {

@@ -215,6 +215,8 @@ function openModal(id) {
   byId('fVideo').value = d && d.videoUrl ? d.videoUrl : '';
   byId('fAvailable').checked = d ? d.available : true;
   byId('fPopular').checked = d ? d.popular : false;
+  byId('fSpicy').checked = d ? !!d.spicy : false;
+  byId('fVegetarian').checked = d ? !!d.vegetarian : false;
   byId('deleteDishBtn').hidden = !d;
 
   byId('modalBackdrop').hidden = false;
@@ -243,7 +245,9 @@ byId('saveDishBtn').addEventListener('click', async () => {
     imgUrl: byId('fImg').value.trim() || null,
     videoUrl: byId('fVideo').value.trim() || null,
     available: byId('fAvailable').checked,
-    popular: byId('fPopular').checked
+    popular: byId('fPopular').checked,
+    spicy: byId('fSpicy').checked,
+    vegetarian: byId('fVegetarian').checked
   };
 
   try {

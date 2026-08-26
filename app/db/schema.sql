@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS dishes (
   popular       BOOLEAN NOT NULL DEFAULT false,
   offer_pct     INTEGER NOT NULL DEFAULT 0,   -- 0 = no discount badge
   available     BOOLEAN NOT NULL DEFAULT true,
+  is_spicy      BOOLEAN NOT NULL DEFAULT false,
+  is_vegetarian BOOLEAN NOT NULL DEFAULT false,
   sort_order    INTEGER NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -83,8 +83,9 @@ const I18N = {
     sortLabel: 'Сортировка', sortDefault: 'По умолчанию', sortPriceAsc: 'Сначала дешёвые',
     sortPriceDesc: 'Сначала дорогие', sortRating: 'Сначала с высоким рейтингом',
     prepLabel: 'Время готовки', prepAny: 'Любое', prepUpTo15: 'До 15 мин', prepUpTo30: 'До 30 мин',
-    ratingLabel: 'Рейтинг', ratingAny: 'Любой', ratingFrom40: 'От 4.0', ratingFrom45: 'От 4.5',
-    availLabel: 'Наличие', availOnly: 'Только в наличии'
+    spicyLabel: 'Острое', spicyAny: 'Любое', spicySpicy: 'Острое', spicyMild: 'Не острое',
+    alsoShowLabel: 'Также показать только', vegOnly: 'Вегетарианское', offerOnly: 'Со скидкой', recommendedOnly: 'Рекомендуем',
+    sortBtnLabel: 'Сортировка'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -112,8 +113,9 @@ const I18N = {
     sortLabel: 'Sort by', sortDefault: 'Default', sortPriceAsc: 'Price: low to high',
     sortPriceDesc: 'Price: high to low', sortRating: 'Highest rated first',
     prepLabel: 'Prep time', prepAny: 'Any', prepUpTo15: 'Up to 15 min', prepUpTo30: 'Up to 30 min',
-    ratingLabel: 'Rating', ratingAny: 'Any', ratingFrom40: '4.0+', ratingFrom45: '4.5+',
-    availLabel: 'Availability', availOnly: 'In stock only'
+    spicyLabel: 'Spicy', spicyAny: 'Any', spicySpicy: 'Spicy', spicyMild: 'Not spicy',
+    alsoShowLabel: 'Also show only', vegOnly: 'Vegetarian', offerOnly: 'With a discount', recommendedOnly: 'Recommended',
+    sortBtnLabel: 'Sort'
   }
 };
 
@@ -173,6 +175,9 @@ function heartIcon(active, size = 13) {
 function starIcon(size = 12, color = '#F5B800') {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" stroke="none"><path d="${STAR_D}"/></svg>`;
 }
+function checkIcon(size = 13, color = '#FF5722') {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="3"><path d="${CHECK_D}"/></svg>`;
+}
 function plusMinusIcon(inCart) {
   return inCart
     ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="${CHECK_D}"/></svg>`
@@ -208,8 +213,8 @@ function tabLabel(key) { return key === 'popular' ? t('tabPopular') : key === 'o
 const state = {
   screen: 'home', cat: CAT_ALL, tab: TABS[0], detailId: null, size: 0, qty: 1,
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
-  infoOpen: false, filtersOpen: false, fMin: '', fMax: '',
-  fPrep: 0, fMinRating: 0, fAvailableOnly: false, sortBy: 'default'
+  infoOpen: false, filtersOpen: false, sortOpen: false, fMin: '', fMax: '',
+  fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default'
 };
 
 let toastTimer = null;
@@ -337,13 +342,14 @@ function matchesPrepTime(d) {
   if (!state.fPrep) return true;
   return d.time !== undefined && d.time <= state.fPrep;
 }
-function matchesMinRating(d) {
-  if (!state.fMinRating) return true;
-  return d.rating !== undefined && Number(d.rating) >= state.fMinRating;
+function matchesSpicy(d) {
+  if (state.fSpicy === 'spicy') return !!d.spicy;
+  if (state.fSpicy === 'mild') return !d.spicy;
+  return true;
 }
-function matchesAvailability(d) {
-  return !state.fAvailableOnly || d.available;
-}
+function matchesVegOnly(d) { return !state.fVegOnly || !!d.vegetarian; }
+function matchesOfferOnly(d) { return !state.fOfferOnly || !!d.offer; }
+function matchesRecommendedOnly(d) { return !state.fRecommendedOnly || !!d.popular; }
 function sortList(list) {
   if (state.sortBy === 'default') return list;
   const arr = list.slice();
@@ -354,7 +360,7 @@ function sortList(list) {
 }
 function filterCount() {
   return (state.fMin !== '' || state.fMax !== '' ? 1 : 0) + (state.fPrep ? 1 : 0) +
-    (state.fMinRating ? 1 : 0) + (state.fAvailableOnly ? 1 : 0);
+    (state.fSpicy !== 'any' ? 1 : 0) + (state.fVegOnly ? 1 : 0) + (state.fOfferOnly ? 1 : 0) + (state.fRecommendedOnly ? 1 : 0);
 }
 function cartEntries() {
   return Object.keys(state.cart).map(key => {
@@ -553,7 +559,8 @@ function renderScreens() {
   });
 
   const list = sortList(DISHES.filter(d =>
-    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) && matchesMinRating(d) && matchesAvailability(d)
+    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) &&
+    matchesSpicy(d) && matchesVegOnly(d) && matchesOfferOnly(d) && matchesRecommendedOnly(d)
   ));
 
   // Home
@@ -790,17 +797,6 @@ function renderModals() {
   byId('priceMinInput').value = state.fMin;
   byId('priceMaxInput').value = state.fMax;
 
-  byId('sortFilterLabel').textContent = t('sortLabel');
-  byId('sortOpts').innerHTML = [
-    { v: 'default', label: t('sortDefault') },
-    { v: 'price-asc', label: t('sortPriceAsc') },
-    { v: 'price-desc', label: t('sortPriceDesc') },
-    { v: 'rating-desc', label: t('sortRating') }
-  ].map(o => `<button type="button" class="opt-btn ${state.sortBy === o.v ? 'active' : ''}" data-sort="${o.v}">${esc(o.label)}</button>`).join('');
-  document.querySelectorAll('#sortOpts [data-sort]').forEach(b => b.addEventListener('click', () => {
-    state.sortBy = b.getAttribute('data-sort'); renderAll();
-  }));
-
   byId('prepFilterLabel').textContent = t('prepLabel');
   byId('prepOpts').innerHTML = [
     { v: 0, label: t('prepAny') }, { v: 15, label: t('prepUpTo15') }, { v: 30, label: t('prepUpTo30') }
@@ -809,24 +805,45 @@ function renderModals() {
     state.fPrep = Number(b.getAttribute('data-prep')); renderAll();
   }));
 
-  byId('ratingFilterLabel').textContent = t('ratingLabel');
-  byId('ratingOpts').innerHTML = [
-    { v: 0, label: t('ratingAny') }, { v: 4.0, label: t('ratingFrom40') }, { v: 4.5, label: t('ratingFrom45') }
-  ].map(o => `<button type="button" class="opt-btn ${state.fMinRating === o.v ? 'active' : ''}" data-rating="${o.v}">${esc(o.label)}</button>`).join('');
-  document.querySelectorAll('#ratingOpts [data-rating]').forEach(b => b.addEventListener('click', () => {
-    state.fMinRating = Number(b.getAttribute('data-rating')); renderAll();
+  byId('spicyFilterLabel').textContent = t('spicyLabel');
+  byId('spicyOpts').innerHTML = [
+    { v: 'any', label: t('spicyAny') }, { v: 'spicy', label: t('spicySpicy') }, { v: 'mild', label: t('spicyMild') }
+  ].map(o => `<button type="button" class="opt-btn ${state.fSpicy === o.v ? 'active' : ''}" data-spicy="${o.v}">${esc(o.label)}</button>`).join('');
+  document.querySelectorAll('#spicyOpts [data-spicy]').forEach(b => b.addEventListener('click', () => {
+    state.fSpicy = b.getAttribute('data-spicy'); renderAll();
   }));
 
-  byId('availFilterLabel').textContent = t('availLabel');
-  byId('availOpts').innerHTML =
-    `<button type="button" class="opt-btn toggle ${state.fAvailableOnly ? 'active' : ''}" id="availOnlyBtn">${esc(t('availOnly'))}</button>`;
-  byId('availOnlyBtn').addEventListener('click', () => { state.fAvailableOnly = !state.fAvailableOnly; renderAll(); });
+  byId('alsoShowLabel').textContent = t('alsoShowLabel');
+  byId('toggleOpts').innerHTML = [
+    { key: 'fVegOnly', id: 'vegOnlyBtn', label: t('vegOnly') },
+    { key: 'fOfferOnly', id: 'offerOnlyBtn', label: t('offerOnly') },
+    { key: 'fRecommendedOnly', id: 'recommendedOnlyBtn', label: t('recommendedOnly') }
+  ].map(o => `<button type="button" class="opt-btn toggle ${state[o.key] ? 'active' : ''}" id="${o.id}">${esc(o.label)}</button>`).join('');
+  byId('vegOnlyBtn').addEventListener('click', () => { state.fVegOnly = !state.fVegOnly; renderAll(); });
+  byId('offerOnlyBtn').addEventListener('click', () => { state.fOfferOnly = !state.fOfferOnly; renderAll(); });
+  byId('recommendedOnlyBtn').addEventListener('click', () => { state.fRecommendedOnly = !state.fRecommendedOnly; renderAll(); });
 
   const resultCount = DISHES.filter(d =>
-    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) && matchesMinRating(d) && matchesAvailability(d) &&
+    matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) &&
+    matchesSpicy(d) && matchesVegOnly(d) && matchesOfferOnly(d) && matchesRecommendedOnly(d) &&
     (state.screen === 'menu' ? matchesTab(d) : true)
   ).length;
   byId('applyFiltersBtn').textContent = (currentLang() === 'en' ? 'Show ' : 'Показать ') + positionsLabel(resultCount);
+
+  byId('sortBackdrop').hidden = !state.sortOpen;
+  byId('sortModalTitle').textContent = t('sortLabel');
+  byId('sortList').innerHTML = [
+    { v: 'default', label: t('sortDefault') },
+    { v: 'price-asc', label: t('sortPriceAsc') },
+    { v: 'price-desc', label: t('sortPriceDesc') },
+    { v: 'rating-desc', label: t('sortRating') }
+  ].map(o => `<button type="button" class="sort-item ${state.sortBy === o.v ? 'active' : ''}" data-sort="${o.v}">
+      <span>${esc(o.label)}</span>
+      ${state.sortBy === o.v ? checkIcon(15) : ''}
+    </button>`).join('');
+  document.querySelectorAll('#sortList [data-sort]').forEach(b => b.addEventListener('click', () => {
+    state.sortBy = b.getAttribute('data-sort'); state.sortOpen = false; renderAll();
+  }));
 }
 
 /* ---------------------------------------------------------------- init ---------------------------------------------------------------- */
@@ -851,11 +868,15 @@ function bindStaticEvents() {
   byId('filtersBackdrop').addEventListener('click', e => { if (e.target.id === 'filtersBackdrop') { state.filtersOpen = false; renderModals(); } });
   byId('applyFiltersBtn').addEventListener('click', () => { state.filtersOpen = false; renderAll(); });
   byId('resetFiltersBtn').addEventListener('click', () => {
-    Object.assign(state, { fMin: '', fMax: '', fPrep: 0, fMinRating: 0, fAvailableOnly: false, sortBy: 'default' });
+    Object.assign(state, { fMin: '', fMax: '', fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false });
     renderAll();
   });
   byId('priceMinInput').addEventListener('input', e => { state.fMin = e.target.value; renderModals(); });
   byId('priceMaxInput').addEventListener('input', e => { state.fMax = e.target.value; renderModals(); });
+
+  byId('sortBtn').addEventListener('click', () => { state.sortOpen = true; renderModals(); });
+  byId('sortCloseBtn').addEventListener('click', () => { state.sortOpen = false; renderModals(); });
+  byId('sortBackdrop').addEventListener('click', e => { if (e.target.id === 'sortBackdrop') { state.sortOpen = false; renderModals(); } });
 }
 
 async function loadMenu() {

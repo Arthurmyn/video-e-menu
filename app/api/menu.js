@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     );
 
     const dishRes = await client.query(
-      `SELECT d.id, d.category_id, d.name, d.img_url, d.video_url, d.rating, d.cal, d.time_min, d.popular, d.offer_pct, d.available, d.sort_order,
+      `SELECT d.id, d.category_id, d.name, d.img_url, d.video_url, d.rating, d.cal, d.time_min, d.popular, d.offer_pct, d.available, d.is_spicy, d.is_vegetarian, d.sort_order,
               c.name_ru AS category_ru,
               s.label AS size_label, s.price AS size_price, s.sort_order AS size_sort
        FROM dishes d
@@ -61,6 +61,8 @@ module.exports = async (req, res) => {
           offer: row.offer_pct > 0,
           offerPct: row.offer_pct,
           available: row.available,
+          spicy: row.is_spicy,
+          vegetarian: row.is_vegetarian,
           sizes: []
         });
       }

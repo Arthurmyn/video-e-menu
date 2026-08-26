@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
       const restaurantId = await getRestaurantId(client);
       const rows = await client.query(
         `SELECT d.id, d.category_id, c.name_ru AS category_ru, d.name, d.img_url, d.video_url, d.rating, d.cal, d.time_min,
-                d.popular, d.offer_pct, d.available, d.sort_order,
+                d.popular, d.offer_pct, d.available, d.is_spicy, d.is_vegetarian, d.sort_order,
                 s.id AS size_id, s.label AS size_label, s.price AS size_price, s.sort_order AS size_sort
          FROM dishes d
          JOIN categories c ON c.id = d.category_id
@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
           byId.set(r.id, {
             id: r.id, categoryId: r.category_id, categoryRu: r.category_ru, name: r.name,
             imgUrl: r.img_url, videoUrl: r.video_url, rating: r.rating !== null ? Number(r.rating) : null, cal: r.cal, time: r.time_min,
-            popular: r.popular, offerPct: r.offer_pct, available: r.available, sortOrder: r.sort_order, sizes: []
+            popular: r.popular, offerPct: r.offer_pct, available: r.available, spicy: r.is_spicy, vegetarian: r.is_vegetarian, sortOrder: r.sort_order, sizes: []
           });
         }
         if (r.size_id !== null) byId.get(r.id).sizes.push({ id: r.size_id, label: r.size_label, price: r.size_price });
@@ -70,13 +70,14 @@ module.exports = async (req, res) => {
       if (catCheck.rows.length === 0) { res.status(400).json({ ok: false, error: 'Unknown categoryId' }); return; }
 
       const dishRes = await client.query(
-        `INSERT INTO dishes (restaurant_id, category_id, name, img_url, video_url, rating, cal, time_min, popular, offer_pct, available, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
+        `INSERT INTO dishes (restaurant_id, category_id, name, img_url, video_url, rating, cal, time_min, popular, offer_pct, available, is_spicy, is_vegetarian, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
            (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM dishes WHERE restaurant_id = $1))
          RETURNING id`,
         [restaurantId, body.categoryId, body.name.trim(), body.imgUrl || null, body.videoUrl || null,
          body.rating != null ? body.rating : null, body.cal != null ? body.cal : null, body.time != null ? body.time : null,
-         !!body.popular, Number.isInteger(body.offerPct) ? body.offerPct : 0, body.available !== false]
+         !!body.popular, Number.isInteger(body.offerPct) ? body.offerPct : 0, body.available !== false,
+         !!body.spicy, !!body.vegetarian]
       );
       const dishId = dishRes.rows[0].id;
       for (let i = 0; i < body.sizes.length; i++) {

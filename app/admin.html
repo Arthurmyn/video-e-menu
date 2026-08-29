@@ -105,6 +105,25 @@
       </div>
       <div class="muted" id="kaspiQrUploadStatus" style="margin-top:5px;"></div>
     </div>
+
+    <label class="checkline"><input type="checkbox" id="paymentAutoConfirmInput"> Подтверждать оплату автоматически (через уведомления с телефона)</label>
+    <div class="field" id="webhookSetupBlock" hidden>
+      <label>Webhook-ссылка для приложения-форвардера (например, MacroDroid)</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="webhookUrlInput" readonly style="flex:1; background:var(--bg);">
+        <button type="button" class="btn btn-outline btn-sm" id="copyWebhookBtn">Скопировать</button>
+        <button type="button" class="btn btn-outline btn-sm" id="regenTokenBtn">Новый токен</button>
+      </div>
+      <div class="muted" style="margin-top:10px; line-height:1.6;">
+        <b>Настройка (Android + MacroDroid), нужен отдельный телефон:</b><br>
+        1. Установите MacroDroid, войдите в Kaspi Business ресторана на этом телефоне.<br>
+        2. Создайте макрос — триггер «Notification Received», фильтр по приложению Kaspi.kz.<br>
+        3. Действие — «HTTP Request»: POST на ссылку выше, телом запроса — текст уведомления.<br>
+        4. Телефон должен оставаться включённым и на связи.<br>
+        Формат уведомлений Kaspi у нас не задокументирован — если автоподтверждение не срабатывает, пришлите нам пример текста уведомления, донастроим разбор суммы.
+      </div>
+    </div>
+
     <button type="button" class="btn btn-primary btn-sm" id="savePaymentBtn">Сохранить</button>
   </div>
 

@@ -12,9 +12,11 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address       TEXT,
   hours_ru      TEXT,
   hours_en      TEXT,
-  payment_enabled    BOOLEAN NOT NULL DEFAULT false, -- require Kaspi payment before an order reaches the kitchen
-  kaspi_qr_url       TEXT,                           -- Blob-hosted QR image, shown to guests when payment_enabled
-  kaspi_display_name TEXT,                           -- fallback text (phone/name) if the QR won't scan
+  payment_enabled      BOOLEAN NOT NULL DEFAULT false, -- require Kaspi payment before an order reaches the kitchen
+  kaspi_qr_url         TEXT,                           -- Blob-hosted QR image, shown to guests when payment_enabled
+  kaspi_display_name   TEXT,                           -- fallback text (phone/name) if the QR won't scan
+  payment_auto_confirm BOOLEAN NOT NULL DEFAULT false, -- confirm payment automatically via a phone notification-forwarder instead of manual Telegram verification
+  kaspi_webhook_token  TEXT,                           -- secret in the notify-webhook URL that identifies this restaurant
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -56,7 +58,23 @@ CREATE TABLE IF NOT EXISTS dish_sizes (
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
 
+-- Every submitted order gets a row, even outside the payment flow — that's
+-- what makes amount-matching possible for payment_auto_confirm, and it's a
+-- free order log as a side effect.
+CREATE TABLE IF NOT EXISTS orders (
+  id            SERIAL PRIMARY KEY,
+  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  table_label   TEXT,
+  items_json    JSONB NOT NULL,
+  total         INTEGER NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'sent', -- sent | awaiting_payment | confirmed | expired
+  telegram_message_id TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_categories_restaurant ON categories(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_dishes_restaurant ON dishes(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_dishes_category ON dishes(category_id);
 CREATE INDEX IF NOT EXISTS idx_dish_sizes_dish ON dish_sizes(dish_id);
+CREATE INDEX IF NOT EXISTS idx_orders_restaurant_status ON orders(restaurant_id, status, created_at);

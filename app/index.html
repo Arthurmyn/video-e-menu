@@ -253,10 +253,15 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="payment-body">
+      <div class="payment-body" id="paymentBodyDefault">
         <img class="payment-qr" id="paymentQrImg" alt="Kaspi QR">
         <div class="payment-amount" id="paymentAmount"></div>
         <div class="payment-hint" id="paymentHint"></div>
+      </div>
+      <div class="payment-wait" id="paymentWaitBody" hidden>
+        <div class="payment-spinner"></div>
+        <div class="payment-wait-title" id="paymentWaitTitle"></div>
+        <div class="payment-wait-sub" id="paymentWaitSub"></div>
       </div>
       <button type="button" class="btn-dark btn-block" id="paymentPaidBtn"></button>
     </div>

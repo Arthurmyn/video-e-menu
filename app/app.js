@@ -92,7 +92,10 @@ const I18N = {
     spinAgain: 'Крутить ещё раз', addAllToCart: 'Добавить всё в заказ', addedAllToCart: 'добавлено в заказ',
     goesWellTitle: 'С этим блюдом заказывают',
     paymentModalTitle: 'Оплата через Kaspi', paymentHintPrefix: 'Если QR не сканируется, переведите вручную:',
-    paymentPaidBtn: 'Я оплатил, отправить заказ'
+    paymentPaidBtn: 'Я оплатил, отправить заказ',
+    paymentWaitTitle: 'Ждём подтверждения оплаты…', paymentWaitSub: 'Обычно это занимает несколько секунд после перевода.',
+    paymentTimeoutTitle: 'Не удалось подтвердить автоматически', paymentTimeoutSub: 'Заказ передан официанту — он свяжется с вами.',
+    paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -128,7 +131,10 @@ const I18N = {
     spinAgain: 'Spin again', addAllToCart: 'Add all to order', addedAllToCart: 'added to your order',
     goesWellTitle: 'Goes well with this',
     paymentModalTitle: 'Pay with Kaspi', paymentHintPrefix: "If the QR won't scan, transfer manually:",
-    paymentPaidBtn: "I've paid, send the order"
+    paymentPaidBtn: "I've paid, send the order",
+    paymentWaitTitle: 'Waiting for payment confirmation…', paymentWaitSub: 'This usually takes a few seconds after you pay.',
+    paymentTimeoutTitle: "Couldn't confirm automatically", paymentTimeoutSub: "Your order was sent to staff — they'll follow up.",
+    paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close'
   }
 };
 
@@ -226,7 +232,7 @@ function tabLabel(key) { return key === 'popular' ? t('tabPopular') : key === 'o
 const state = {
   screen: 'home', cat: CAT_ALL, tab: TABS[0], detailId: null, size: 0, qty: 1,
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
-  infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, paymentOpen: false, fMin: '', fMax: '',
+  infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, paymentOpen: false, paymentPhase: 'pay', fMin: '', fMax: '',
   fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default',
   suggestId: null, suggestList: []
 };
@@ -812,20 +818,55 @@ function renderCartScreen() {
 
 function openPaymentModal(entries, total) {
   pendingOrder = { entries, total };
+  state.paymentPhase = 'pay';
   state.paymentOpen = true;
   renderModals();
 }
 function closePaymentModal() {
   state.paymentOpen = false;
+  clearInterval(paymentPollTimer);
+  paymentPollTimer = null;
   renderModals();
 }
 
-async function submitOrder(entries, total) {
-  const btn = byId('placeOrderBtn');
+let paymentPollTimer = null;
+const PAYMENT_POLL_MS = 3000;
+const PAYMENT_POLL_TIMEOUT_MS = 5 * 60 * 1000;
+
+function startPaymentPoll(orderId) {
+  clearInterval(paymentPollTimer);
+  const deadline = Date.now() + PAYMENT_POLL_TIMEOUT_MS;
+  paymentPollTimer = setInterval(async () => {
+    if (!state.paymentOpen || state.paymentPhase !== 'waiting') { clearInterval(paymentPollTimer); return; }
+    if (Date.now() > deadline) {
+      clearInterval(paymentPollTimer);
+      state.paymentPhase = 'timeout';
+      renderModals();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/order/${orderId}`);
+      const data = await res.json().catch(() => null);
+      if (data && data.ok && data.status === 'confirmed') {
+        clearInterval(paymentPollTimer);
+        paymentPollTimer = null;
+        state.cart = {};
+        state.paymentOpen = false;
+        go('home');
+        flash(t('paymentConfirmed'));
+      }
+    } catch (e) { /* transient network hiccup — keep polling until the timeout */ }
+  }, PAYMENT_POLL_MS);
+}
+
+async function submitOrder(entries, total, opts) {
+  const viaPaymentModal = !!(opts && opts.viaPaymentModal);
+  const btn = viaPaymentModal ? byId('paymentPaidBtn') : byId('placeOrderBtn');
   if (btn.disabled) return;
   btn.disabled = true;
-  const originalLabel = byId('orderLabel').textContent;
-  byId('orderLabel').textContent = t('sending');
+  const originalLabel = viaPaymentModal ? t('paymentPaidBtn') : byId('orderLabel').textContent;
+  if (viaPaymentModal) btn.textContent = t('sending');
+  else byId('orderLabel').textContent = t('sending');
 
   const payload = {
     table: tableLabelRu(),
@@ -846,12 +887,22 @@ async function submitOrder(entries, total) {
     });
     const data = await res.json().catch(() => ({ ok: false }));
     if (!res.ok || !data.ok) throw new Error(data.error || 'request failed');
+
+    if (viaPaymentModal && data.awaitConfirmation && data.orderId) {
+      state.paymentPhase = 'waiting';
+      renderModals();
+      startPaymentPoll(data.orderId);
+      return;
+    }
+
     state.cart = {};
+    if (viaPaymentModal) closePaymentModal();
     go('home');
     flash(t('orderSent'));
   } catch (e) {
     btn.disabled = false;
-    byId('orderLabel').textContent = originalLabel;
+    if (viaPaymentModal) btn.textContent = originalLabel;
+    else byId('orderLabel').textContent = originalLabel;
     flash(t('orderFailed'));
   }
 }
@@ -1043,12 +1094,36 @@ function renderModals() {
   byId('paymentBackdrop').hidden = !state.paymentOpen;
   if (state.paymentOpen && pendingOrder) {
     byId('paymentModalTitle').textContent = t('paymentModalTitle');
-    const qrImg = byId('paymentQrImg');
-    qrImg.src = RESTAURANT.kaspiQrUrl || '';
-    qrImg.hidden = !RESTAURANT.kaspiQrUrl;
-    byId('paymentAmount').textContent = money(pendingOrder.total);
-    byId('paymentHint').textContent = RESTAURANT.kaspiDisplayName ? t('paymentHintPrefix') + ' ' + RESTAURANT.kaspiDisplayName : '';
-    byId('paymentPaidBtn').textContent = t('paymentPaidBtn');
+    const payDefault = byId('paymentBodyDefault');
+    const waitBody = byId('paymentWaitBody');
+    const paidBtn = byId('paymentPaidBtn');
+
+    if (state.paymentPhase === 'pay') {
+      payDefault.hidden = false;
+      waitBody.hidden = true;
+      const qrImg = byId('paymentQrImg');
+      qrImg.src = RESTAURANT.kaspiQrUrl || '';
+      qrImg.hidden = !RESTAURANT.kaspiQrUrl;
+      byId('paymentAmount').textContent = money(pendingOrder.total);
+      byId('paymentHint').textContent = RESTAURANT.kaspiDisplayName ? t('paymentHintPrefix') + ' ' + RESTAURANT.kaspiDisplayName : '';
+      paidBtn.hidden = false;
+      paidBtn.disabled = false;
+      paidBtn.textContent = t('paymentPaidBtn');
+    } else if (state.paymentPhase === 'waiting') {
+      payDefault.hidden = true;
+      waitBody.hidden = false;
+      byId('paymentWaitTitle').textContent = t('paymentWaitTitle');
+      byId('paymentWaitSub').textContent = t('paymentWaitSub');
+      paidBtn.hidden = true;
+    } else if (state.paymentPhase === 'timeout') {
+      payDefault.hidden = true;
+      waitBody.hidden = false;
+      byId('paymentWaitTitle').textContent = t('paymentTimeoutTitle');
+      byId('paymentWaitSub').textContent = t('paymentTimeoutSub');
+      paidBtn.hidden = false;
+      paidBtn.disabled = false;
+      paidBtn.textContent = t('close');
+    }
   }
 }
 
@@ -1091,9 +1166,9 @@ function bindStaticEvents() {
   byId('paymentCloseBtn').addEventListener('click', closePaymentModal);
   byId('paymentBackdrop').addEventListener('click', e => { if (e.target.id === 'paymentBackdrop') closePaymentModal(); });
   byId('paymentPaidBtn').addEventListener('click', () => {
+    if (state.paymentPhase === 'timeout') { closePaymentModal(); return; }
     const order = pendingOrder;
-    closePaymentModal();
-    if (order) submitOrder(order.entries, order.total);
+    if (order) submitOrder(order.entries, order.total, { viaPaymentModal: true });
   });
 }
 

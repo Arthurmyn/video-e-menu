@@ -80,7 +80,10 @@ async function loadAll() {
     ]);
     dishes = dishRes.dishes;
     categories = catRes.categories;
-    paymentSettings = { paymentEnabled: payRes.paymentEnabled, kaspiQrUrl: payRes.kaspiQrUrl, kaspiDisplayName: payRes.kaspiDisplayName };
+    paymentSettings = {
+      paymentEnabled: payRes.paymentEnabled, kaspiQrUrl: payRes.kaspiQrUrl, kaspiDisplayName: payRes.kaspiDisplayName,
+      paymentAutoConfirm: payRes.paymentAutoConfirm, kaspiWebhookToken: payRes.kaspiWebhookToken
+    };
     renderTable();
     renderPaymentCard();
   } catch (e) {
@@ -98,7 +101,39 @@ function renderPaymentCard() {
   } else {
     preview.hidden = true;
   }
+
+  byId('paymentAutoConfirmInput').checked = !!paymentSettings.paymentAutoConfirm;
+  byId('webhookSetupBlock').hidden = !paymentSettings.paymentAutoConfirm;
+  byId('webhookUrlInput').value = paymentSettings.kaspiWebhookToken
+    ? `${location.origin}/api/kaspi-notify?token=${paymentSettings.kaspiWebhookToken}`
+    : '';
 }
+
+byId('paymentAutoConfirmInput').addEventListener('change', () => {
+  byId('webhookSetupBlock').hidden = !byId('paymentAutoConfirmInput').checked;
+});
+
+byId('copyWebhookBtn').addEventListener('click', async () => {
+  const url = byId('webhookUrlInput').value;
+  if (!url) { flash('Сначала сгенерируйте токен'); return; }
+  try {
+    await navigator.clipboard.writeText(url);
+    flash('Ссылка скопирована');
+  } catch (e) {
+    flash('Не удалось скопировать — выделите ссылку вручную');
+  }
+});
+
+byId('regenTokenBtn').addEventListener('click', async () => {
+  try {
+    const data = await api('/api/admin/restaurant', { method: 'PUT', body: JSON.stringify({ regenerateKaspiToken: true }) });
+    paymentSettings.kaspiWebhookToken = data.kaspiWebhookToken;
+    renderPaymentCard();
+    flash('Новый токен сохранён — обновите ссылку в приложении на телефоне');
+  } catch (e) {
+    flash('Не удалось сгенерировать токен: ' + e.message);
+  }
+});
 
 byId('kaspiQrFileBtn').addEventListener('click', () => byId('kaspiQrFileInput').click());
 byId('kaspiQrFileInput').addEventListener('change', async () => {
@@ -137,11 +172,14 @@ byId('savePaymentBtn').addEventListener('click', async () => {
   const payload = {
     paymentEnabled: byId('paymentEnabledInput').checked,
     kaspiDisplayName: byId('kaspiDisplayNameInput').value.trim() || null,
-    kaspiQrUrl: paymentSettings.kaspiQrUrl || null
+    kaspiQrUrl: paymentSettings.kaspiQrUrl || null,
+    paymentAutoConfirm: byId('paymentAutoConfirmInput').checked
   };
   try {
-    await api('/api/admin/restaurant', { method: 'PUT', body: JSON.stringify(payload) });
+    const data = await api('/api/admin/restaurant', { method: 'PUT', body: JSON.stringify(payload) });
     paymentSettings = { ...paymentSettings, ...payload };
+    if (data.kaspiWebhookToken) paymentSettings.kaspiWebhookToken = data.kaspiWebhookToken;
+    renderPaymentCard();
     flash('Настройки оплаты сохранены');
   } catch (e) {
     flash('Не удалось сохранить: ' + e.message);

@@ -20,7 +20,7 @@ function formatMoney(n) {
   return num.toLocaleString('ru-RU') + ' ₸';
 }
 
-function buildMessage(order, mode) {
+function buildMessage(order, mode, method) {
   const header = mode === 'awaiting_payment'
     ? '⏳ Ожидает автоподтверждения оплаты (Kaspi) — '
     : mode === 'awaiting_manual_check'
@@ -33,7 +33,9 @@ function buildMessage(order, mode) {
   }
   lines.push('', 'Итого: ' + formatMoney(order.total));
   lines.push(new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' }));
-  if (mode === 'awaiting_manual_check') {
+  if (mode === 'sent' && method === 'cash') {
+    lines.push('', '💵 Оплата наличными/картой — у официанта.');
+  } else if (mode === 'awaiting_manual_check') {
     lines.push('', '⚠️ Гость нажал «Я оплатил» — проверьте поступление в Kaspi перед началом приготовления.');
   } else if (mode === 'awaiting_payment') {
     lines.push('', 'Официанту действовать не нужно — подтвердится автоматически, как только поступит оплата.');
@@ -97,11 +99,16 @@ module.exports = async (req, res) => {
   }
 
   const paymentEnabled = !!(restaurant && restaurant.payment_enabled);
-  const autoConfirm = paymentEnabled && !!restaurant.payment_auto_confirm;
-  const mode = autoConfirm ? 'awaiting_payment' : paymentEnabled ? 'awaiting_manual_check' : 'sent';
+  const method = body.method === 'cash' ? 'cash' : body.method === 'kaspi' ? 'kaspi' : null;
+  const autoConfirm = paymentEnabled && method === 'kaspi' && !!restaurant.payment_auto_confirm;
+  const mode = method === 'cash'
+    ? 'sent'
+    : autoConfirm
+      ? 'awaiting_payment'
+      : (paymentEnabled && method === 'kaspi') ? 'awaiting_manual_check' : 'sent';
   const status = autoConfirm ? 'awaiting_payment' : 'sent';
 
-  const text = buildMessage(body, mode);
+  const text = buildMessage(body, mode, method);
   const tgData = await sendTelegram(text);
   if (!tgData.ok) {
     res.status(502).json({ ok: false, error: 'Failed to reach the kitchen chat' });
@@ -112,10 +119,10 @@ module.exports = async (req, res) => {
   if (restaurant) {
     try {
       const insert = await client.query(
-        `INSERT INTO orders (restaurant_id, table_label, items_json, total, status, telegram_message_id)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        `INSERT INTO orders (restaurant_id, table_label, items_json, total, status, payment_method, telegram_message_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
         [restaurant.id, clean(body.table || ''), JSON.stringify(body.items), Math.round(Number(body.total)),
-         status, tgData.result ? String(tgData.result.message_id) : null]
+         status, method, tgData.result ? String(tgData.result.message_id) : null]
       );
       orderId = insert.rows[0].id;
     } catch (e) {

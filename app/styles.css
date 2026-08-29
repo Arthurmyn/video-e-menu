@@ -519,6 +519,13 @@ main { padding-top: 4px; }
 @keyframes paymentSpin { to { transform: rotate(360deg); } }
 .payment-wait-title { font-size: 15px; font-weight: 800; color: var(--ink); margin-top: 16px; }
 .payment-wait-sub { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.payment-choose { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.payment-method-btn {
+  width: 100%; text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 16px;
+  padding: 16px 18px; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer;
+  transition: border-color .2s ease;
+}
+.payment-method-btn:hover { border-color: var(--accent); }
 
 .detail-suggest { margin-top: 28px; }
 .suggest-row { display: flex; gap: 12px; overflow-x: auto; padding: 2px 2px 10px; margin: 0 -2px; -webkit-overflow-scrolling: touch; }

@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS orders (
   items_json    JSONB NOT NULL,
   total         INTEGER NOT NULL,
   status        TEXT NOT NULL DEFAULT 'sent', -- sent | awaiting_payment | confirmed | expired
+  payment_method TEXT,                        -- cash | kaspi | null (payment not required)
   telegram_message_id TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()

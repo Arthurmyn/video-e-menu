@@ -93,6 +93,7 @@ const I18N = {
     goesWellTitle: 'С этим блюдом заказывают',
     paymentModalTitle: 'Оплата через Kaspi', paymentHintPrefix: 'Если QR не сканируется, переведите вручную:',
     paymentPaidBtn: 'Я оплатил, отправить заказ',
+    paymentChooseTitle: 'Способ оплаты', paymentMethodCash: 'Наличными / картой официанту', paymentMethodKaspi: 'Kaspi',
     paymentWaitTitle: 'Ждём подтверждения оплаты…', paymentWaitSub: 'Обычно это занимает несколько секунд после перевода.',
     paymentTimeoutTitle: 'Не удалось подтвердить автоматически', paymentTimeoutSub: 'Заказ передан официанту — он свяжется с вами.',
     paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть'
@@ -132,6 +133,7 @@ const I18N = {
     goesWellTitle: 'Goes well with this',
     paymentModalTitle: 'Pay with Kaspi', paymentHintPrefix: "If the QR won't scan, transfer manually:",
     paymentPaidBtn: "I've paid, send the order",
+    paymentChooseTitle: 'Payment method', paymentMethodCash: 'Cash / card with the waiter', paymentMethodKaspi: 'Kaspi',
     paymentWaitTitle: 'Waiting for payment confirmation…', paymentWaitSub: 'This usually takes a few seconds after you pay.',
     paymentTimeoutTitle: "Couldn't confirm automatically", paymentTimeoutSub: "Your order was sent to staff — they'll follow up.",
     paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close'
@@ -209,12 +211,13 @@ function mediaPlaceholder(cat, extraClass, iconSize) {
   return `<div class="${extraClass} ph">${catIcon(cat, iconSize, '#C9C2BB')}</div>`;
 }
 function mediaHtml(d, imgClass, iconSize) {
+  // Only ever show a real photo as a video poster. A dish with no video shows
+  // just the category icon placeholder — a random stock photo next to real
+  // cinemagraphs undercuts the "video menu" pitch this product is built on.
   if (d.video) {
     return `<video class="${imgClass}" poster="${d.img || ''}" autoplay muted loop playsinline preload="metadata"><source src="${d.video}" type="video/mp4"></video>`;
   }
-  return d.img
-    ? `<img class="${imgClass}" src="${d.img}" alt="${esc(d.name)}" loading="lazy">`
-    : mediaPlaceholder(d.cat, imgClass, iconSize);
+  return mediaPlaceholder(d.cat, imgClass, iconSize);
 }
 
 const NAV_ITEMS = [
@@ -349,8 +352,9 @@ const REEL_CELL_H = 64;
 
 function reelCellHtml(d) {
   // The strip only ever shows static poster images — a real <video> here
-  // would mean dozens of autoplaying elements scrolling past at once.
-  const thumb = d.img ? `<img src="${d.img}" alt="${esc(d.name)}">` : mediaPlaceholder(d.cat, '', 18);
+  // would mean dozens of autoplaying elements scrolling past at once. Only
+  // dishes that actually have a video get a photo shown at all (see mediaHtml).
+  const thumb = d.video && d.img ? `<img src="${d.img}" alt="${esc(d.name)}">` : mediaPlaceholder(d.cat, '', 18);
   return `<div class="reel-cell">
     <div class="reel-cell-thumb">${thumb}</div>
     <div class="reel-cell-info">
@@ -818,7 +822,7 @@ function renderCartScreen() {
 
 function openPaymentModal(entries, total) {
   pendingOrder = { entries, total };
-  state.paymentPhase = 'pay';
+  state.paymentPhase = 'choose';
   state.paymentOpen = true;
   renderModals();
 }
@@ -871,6 +875,7 @@ async function submitOrder(entries, total, opts) {
   const payload = {
     table: tableLabelRu(),
     total,
+    method: (opts && opts.method) || undefined,
     items: entries.map(c => ({
       name: c.dish.name,
       size: c.dish.sizes[c.size].label,
@@ -1093,14 +1098,23 @@ function renderModals() {
 
   byId('paymentBackdrop').hidden = !state.paymentOpen;
   if (state.paymentOpen && pendingOrder) {
-    byId('paymentModalTitle').textContent = t('paymentModalTitle');
+    const chooseBody = byId('paymentChooseBody');
     const payDefault = byId('paymentBodyDefault');
     const waitBody = byId('paymentWaitBody');
     const paidBtn = byId('paymentPaidBtn');
+    chooseBody.hidden = true;
+    payDefault.hidden = true;
+    waitBody.hidden = true;
+    paidBtn.hidden = true;
 
-    if (state.paymentPhase === 'pay') {
+    if (state.paymentPhase === 'choose') {
+      byId('paymentModalTitle').textContent = t('paymentChooseTitle');
+      chooseBody.hidden = false;
+      byId('paymentMethodCashBtn').textContent = t('paymentMethodCash');
+      byId('paymentMethodKaspiBtn').textContent = t('paymentMethodKaspi');
+    } else if (state.paymentPhase === 'pay') {
+      byId('paymentModalTitle').textContent = t('paymentModalTitle');
       payDefault.hidden = false;
-      waitBody.hidden = true;
       const qrImg = byId('paymentQrImg');
       qrImg.src = RESTAURANT.kaspiQrUrl || '';
       qrImg.hidden = !RESTAURANT.kaspiQrUrl;
@@ -1110,13 +1124,12 @@ function renderModals() {
       paidBtn.disabled = false;
       paidBtn.textContent = t('paymentPaidBtn');
     } else if (state.paymentPhase === 'waiting') {
-      payDefault.hidden = true;
+      byId('paymentModalTitle').textContent = t('paymentModalTitle');
       waitBody.hidden = false;
       byId('paymentWaitTitle').textContent = t('paymentWaitTitle');
       byId('paymentWaitSub').textContent = t('paymentWaitSub');
-      paidBtn.hidden = true;
     } else if (state.paymentPhase === 'timeout') {
-      payDefault.hidden = true;
+      byId('paymentModalTitle').textContent = t('paymentModalTitle');
       waitBody.hidden = false;
       byId('paymentWaitTitle').textContent = t('paymentTimeoutTitle');
       byId('paymentWaitSub').textContent = t('paymentTimeoutSub');
@@ -1165,10 +1178,19 @@ function bindStaticEvents() {
 
   byId('paymentCloseBtn').addEventListener('click', closePaymentModal);
   byId('paymentBackdrop').addEventListener('click', e => { if (e.target.id === 'paymentBackdrop') closePaymentModal(); });
+  byId('paymentMethodCashBtn').addEventListener('click', () => {
+    const order = pendingOrder;
+    closePaymentModal();
+    if (order) submitOrder(order.entries, order.total, { method: 'cash' });
+  });
+  byId('paymentMethodKaspiBtn').addEventListener('click', () => {
+    state.paymentPhase = 'pay';
+    renderModals();
+  });
   byId('paymentPaidBtn').addEventListener('click', () => {
     if (state.paymentPhase === 'timeout') { closePaymentModal(); return; }
     const order = pendingOrder;
-    if (order) submitOrder(order.entries, order.total, { viaPaymentModal: true });
+    if (order) submitOrder(order.entries, order.total, { viaPaymentModal: true, method: 'kaspi' });
   });
 }
 

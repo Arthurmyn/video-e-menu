@@ -12,10 +12,14 @@ function getPool() {
 
 const RESTAURANT_SLUG = 'nauryz';
 
-async function getRestaurantId(client) {
-  const res = await client.query('SELECT id FROM restaurants WHERE slug = $1', [RESTAURANT_SLUG]);
+async function getRestaurant(client) {
+  const res = await client.query('SELECT * FROM restaurants WHERE slug = $1', [RESTAURANT_SLUG]);
   if (res.rows.length === 0) throw new Error('Restaurant not found');
-  return res.rows[0].id;
+  return res.rows[0];
 }
 
-module.exports = { getPool, getRestaurantId, RESTAURANT_SLUG };
+async function getRestaurantId(client) {
+  return (await getRestaurant(client)).id;
+}
+
+module.exports = { getPool, getRestaurant, getRestaurantId, RESTAURANT_SLUG };

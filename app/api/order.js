@@ -4,6 +4,8 @@
 // never hardcode the bot token here, it must stay out of any file that could
 // be committed or shipped to the browser.
 
+const { getPool, getRestaurant } = require('./_db');
+
 const MAX_ITEMS = 50;
 const MAX_STRING = 200;
 
@@ -16,9 +18,9 @@ function formatMoney(n) {
   return num.toLocaleString('ru-RU') + ' ₸';
 }
 
-function buildMessage(order) {
+function buildMessage(order, paymentRequired) {
   const lines = [];
-  lines.push('🔔 Новый заказ — ' + clean(order.table || 'стол не указан'));
+  lines.push((paymentRequired ? '⏳ ТРЕБУЕТ ПРОВЕРКИ ОПЛАТЫ (Kaspi) — ' : '🔔 Новый заказ — ') + clean(order.table || 'стол не указан'));
   lines.push('');
   for (const it of order.items) {
     const size = it.size ? ' (' + clean(it.size) + ')' : '';
@@ -27,6 +29,10 @@ function buildMessage(order) {
   lines.push('');
   lines.push('Итого: ' + formatMoney(order.total));
   lines.push(new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' }));
+  if (paymentRequired) {
+    lines.push('');
+    lines.push('⚠️ Гость нажал «Я оплатил» — проверьте поступление в Kaspi перед началом приготовления.');
+  }
   return lines.join('\n');
 }
 
@@ -68,7 +74,15 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const text = buildMessage(body);
+  let paymentRequired = false;
+  try {
+    const restaurant = await getRestaurant(getPool());
+    paymentRequired = !!restaurant.payment_enabled;
+  } catch (e) {
+    console.error('[order] Failed to read payment settings, sending as a normal order:', e);
+  }
+
+  const text = buildMessage(body, paymentRequired);
 
   try {
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {

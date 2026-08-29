@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address       TEXT,
   hours_ru      TEXT,
   hours_en      TEXT,
+  payment_enabled    BOOLEAN NOT NULL DEFAULT false, -- require Kaspi payment before an order reaches the kitchen
+  kaspi_qr_url       TEXT,                           -- Blob-hosted QR image, shown to guests when payment_enabled
+  kaspi_display_name TEXT,                           -- fallback text (phone/name) if the QR won't scan
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -3,7 +3,7 @@
 // already scoped by restaurant_id so a second venue is a new slug + row,
 // not a rewrite of this handler.
 
-const { getPool, RESTAURANT_SLUG } = require('./_db');
+const { getPool, getRestaurant } = require('./_db');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
@@ -18,15 +18,13 @@ module.exports = async (req, res) => {
   try {
     const client = getPool();
 
-    const restRes = await client.query(
-      `SELECT id, name, phone, phone_tel, address, hours_ru, hours_en FROM restaurants WHERE slug = $1`,
-      [RESTAURANT_SLUG]
-    );
-    if (restRes.rows.length === 0) {
+    let restaurant;
+    try {
+      restaurant = await getRestaurant(client);
+    } catch (e) {
       res.status(404).json({ ok: false, error: 'Restaurant not found' });
       return;
     }
-    const restaurant = restRes.rows[0];
 
     const catRes = await client.query(
       `SELECT id, name_ru, name_en, icon_key, sort_order FROM categories WHERE restaurant_id = $1 ORDER BY sort_order`,
@@ -80,7 +78,10 @@ module.exports = async (req, res) => {
         phoneTel: restaurant.phone_tel,
         address: restaurant.address,
         hoursRu: restaurant.hours_ru,
-        hoursEn: restaurant.hours_en
+        hoursEn: restaurant.hours_en,
+        paymentEnabled: restaurant.payment_enabled,
+        kaspiQrUrl: restaurant.payment_enabled ? (restaurant.kaspi_qr_url || undefined) : undefined,
+        kaspiDisplayName: restaurant.payment_enabled ? (restaurant.kaspi_display_name || undefined) : undefined
       },
       categories: catRes.rows.map(c => ({ nameRu: c.name_ru, nameEn: c.name_en, iconKey: c.icon_key })),
       dishes: Array.from(dishesById.values())

@@ -6,6 +6,7 @@ const money = n => Number(n).toLocaleString('ru-RU') + ' ₸';
 let dishes = [];
 let categories = [];
 let editingId = null; // null = creating a new dish
+let paymentSettings = { paymentEnabled: false, kaspiQrUrl: null, kaspiDisplayName: null };
 
 let toastTimer = null;
 function flash(msg) {
@@ -74,14 +75,78 @@ byId('logoutBtn').addEventListener('click', async () => {
 
 async function loadAll() {
   try {
-    const [dishRes, catRes] = await Promise.all([api('/api/admin/dishes'), api('/api/admin/categories')]);
+    const [dishRes, catRes, payRes] = await Promise.all([
+      api('/api/admin/dishes'), api('/api/admin/categories'), api('/api/admin/restaurant')
+    ]);
     dishes = dishRes.dishes;
     categories = catRes.categories;
+    paymentSettings = { paymentEnabled: payRes.paymentEnabled, kaspiQrUrl: payRes.kaspiQrUrl, kaspiDisplayName: payRes.kaspiDisplayName };
     renderTable();
+    renderPaymentCard();
   } catch (e) {
     flash('Не удалось загрузить данные: ' + e.message);
   }
 }
+
+function renderPaymentCard() {
+  byId('paymentEnabledInput').checked = !!paymentSettings.paymentEnabled;
+  byId('kaspiDisplayNameInput').value = paymentSettings.kaspiDisplayName || '';
+  const preview = byId('kaspiQrPreview');
+  if (paymentSettings.kaspiQrUrl) {
+    preview.src = paymentSettings.kaspiQrUrl;
+    preview.hidden = false;
+  } else {
+    preview.hidden = true;
+  }
+}
+
+byId('kaspiQrFileBtn').addEventListener('click', () => byId('kaspiQrFileInput').click());
+byId('kaspiQrFileInput').addEventListener('change', async () => {
+  const file = byId('kaspiQrFileInput').files[0];
+  byId('kaspiQrFileInput').value = '';
+  if (!file) return;
+
+  const statusEl = byId('kaspiQrUploadStatus');
+  if (!file.type.startsWith('image/')) { statusEl.textContent = 'Нужен файл изображения'; return; }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    statusEl.textContent = `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} МБ, максимум 4 МБ)`;
+    return;
+  }
+
+  statusEl.textContent = 'Загружаем…';
+  try {
+    const dataBase64 = await fileToBase64(file);
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, contentType: file.type || 'image/png', dataBase64 }),
+      credentials: 'same-origin'
+    });
+    const data = await res.json().catch(() => ({ ok: false, error: 'Bad response' }));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+    paymentSettings.kaspiQrUrl = data.url;
+    renderPaymentCard();
+    statusEl.textContent = 'Загружено ✓';
+    setTimeout(() => { if (statusEl.textContent === 'Загружено ✓') statusEl.textContent = ''; }, 3000);
+  } catch (e) {
+    statusEl.textContent = 'Ошибка загрузки: ' + e.message;
+  }
+});
+
+byId('savePaymentBtn').addEventListener('click', async () => {
+  const payload = {
+    paymentEnabled: byId('paymentEnabledInput').checked,
+    kaspiDisplayName: byId('kaspiDisplayNameInput').value.trim() || null,
+    kaspiQrUrl: paymentSettings.kaspiQrUrl || null
+  };
+  try {
+    await api('/api/admin/restaurant', { method: 'PUT', body: JSON.stringify(payload) });
+    paymentSettings = { ...paymentSettings, ...payload };
+    flash('Настройки оплаты сохранены');
+  } catch (e) {
+    flash('Не удалось сохранить: ' + e.message);
+  }
+});
 
 function priceLabel(d) {
   if (d.sizes.length === 1) return money(d.sizes[0].price);
@@ -147,7 +212,7 @@ byId('addSizeBtn').addEventListener('click', () => {
   bindSizeRowRemovers();
 });
 
-const MAX_VIDEO_BYTES = 4 * 1024 * 1024; // matches the server-side cap in api/admin/upload.js
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // matches the server-side cap in api/admin/upload.js
 
 async function fileToBase64(file) {
   const buf = await file.arrayBuffer();
@@ -168,7 +233,7 @@ byId('videoFileInput').addEventListener('change', async () => {
 
   const statusEl = byId('videoUploadStatus');
   if (!file.type.startsWith('video/')) { statusEl.textContent = 'Нужен видеофайл'; return; }
-  if (file.size > MAX_VIDEO_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     statusEl.textContent = `Файл слишком большой (${(file.size / 1024 / 1024).toFixed(1)} МБ, максимум 4 МБ) — сожмите видео покороче или в меньшем разрешении`;
     return;
   }

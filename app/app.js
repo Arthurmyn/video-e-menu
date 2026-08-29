@@ -8,7 +8,8 @@ const TABLE_NUMBER_DEFAULT = '12';
    and is loaded by loadMenu() — these are just placeholders shown for the
    instant before that fetch resolves, not a second source of truth. */
 let RESTAURANT = {
-  name: 'Nauryz', phone: '', phoneTel: '', address: '', hoursRu: '', hoursEn: ''
+  name: 'Nauryz', phone: '', phoneTel: '', address: '', hoursRu: '', hoursEn: '',
+  paymentEnabled: false, kaspiQrUrl: undefined, kaspiDisplayName: undefined
 };
 
 /* Table number comes from the QR link, e.g. https://.../?table=7 — falls back
@@ -89,7 +90,9 @@ const I18N = {
     randomBtnTitle: 'Случайное блюдо', randomModalTitle: 'Случайный выбор',
     randomSlotMain: 'Основное', randomSlotDrink: 'Напиток', randomSlotDessert: 'Десерт',
     spinAgain: 'Крутить ещё раз', addAllToCart: 'Добавить всё в заказ', addedAllToCart: 'добавлено в заказ',
-    goesWellTitle: 'С этим блюдом заказывают'
+    goesWellTitle: 'С этим блюдом заказывают',
+    paymentModalTitle: 'Оплата через Kaspi', paymentHintPrefix: 'Если QR не сканируется, переведите вручную:',
+    paymentPaidBtn: 'Я оплатил, отправить заказ'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -123,7 +126,9 @@ const I18N = {
     randomBtnTitle: 'Random dish', randomModalTitle: 'Random pick',
     randomSlotMain: 'Main', randomSlotDrink: 'Drink', randomSlotDessert: 'Dessert',
     spinAgain: 'Spin again', addAllToCart: 'Add all to order', addedAllToCart: 'added to your order',
-    goesWellTitle: 'Goes well with this'
+    goesWellTitle: 'Goes well with this',
+    paymentModalTitle: 'Pay with Kaspi', paymentHintPrefix: "If the QR won't scan, transfer manually:",
+    paymentPaidBtn: "I've paid, send the order"
   }
 };
 
@@ -221,10 +226,12 @@ function tabLabel(key) { return key === 'popular' ? t('tabPopular') : key === 'o
 const state = {
   screen: 'home', cat: CAT_ALL, tab: TABS[0], detailId: null, size: 0, qty: 1,
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
-  infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, fMin: '', fMax: '',
+  infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, paymentOpen: false, fMin: '', fMax: '',
   fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default',
   suggestId: null, suggestList: []
 };
+
+let pendingOrder = null; // { entries, total } stashed while the payment modal is open, not persisted
 
 let toastTimer = null;
 function flash(msg) {
@@ -797,7 +804,20 @@ function renderCartScreen() {
   byId('cartBrowseBtn').textContent = t('cartOpenMenu');
   byId('cartBackBtn').onclick = () => go('menu');
   byId('cartBrowseBtn').onclick = () => go('menu');
-  byId('placeOrderBtn').onclick = () => submitOrder(entries, total);
+  byId('placeOrderBtn').onclick = () => {
+    if (RESTAURANT.paymentEnabled) openPaymentModal(entries, total);
+    else submitOrder(entries, total);
+  };
+}
+
+function openPaymentModal(entries, total) {
+  pendingOrder = { entries, total };
+  state.paymentOpen = true;
+  renderModals();
+}
+function closePaymentModal() {
+  state.paymentOpen = false;
+  renderModals();
 }
 
 async function submitOrder(entries, total) {
@@ -1019,6 +1039,17 @@ function renderModals() {
 
   byId('randomBackdrop').hidden = !state.randomOpen;
   byId('randomModalTitle').textContent = t('randomModalTitle');
+
+  byId('paymentBackdrop').hidden = !state.paymentOpen;
+  if (state.paymentOpen && pendingOrder) {
+    byId('paymentModalTitle').textContent = t('paymentModalTitle');
+    const qrImg = byId('paymentQrImg');
+    qrImg.src = RESTAURANT.kaspiQrUrl || '';
+    qrImg.hidden = !RESTAURANT.kaspiQrUrl;
+    byId('paymentAmount').textContent = money(pendingOrder.total);
+    byId('paymentHint').textContent = RESTAURANT.kaspiDisplayName ? t('paymentHintPrefix') + ' ' + RESTAURANT.kaspiDisplayName : '';
+    byId('paymentPaidBtn').textContent = t('paymentPaidBtn');
+  }
 }
 
 /* ---------------------------------------------------------------- init ---------------------------------------------------------------- */
@@ -1056,6 +1087,14 @@ function bindStaticEvents() {
   byId('randomBtn').addEventListener('click', openRandomPicker);
   byId('randomCloseBtn').addEventListener('click', closeRandomPicker);
   byId('randomBackdrop').addEventListener('click', e => { if (e.target.id === 'randomBackdrop') closeRandomPicker(); });
+
+  byId('paymentCloseBtn').addEventListener('click', closePaymentModal);
+  byId('paymentBackdrop').addEventListener('click', e => { if (e.target.id === 'paymentBackdrop') closePaymentModal(); });
+  byId('paymentPaidBtn').addEventListener('click', () => {
+    const order = pendingOrder;
+    closePaymentModal();
+    if (order) submitOrder(order.entries, order.total);
+  });
 }
 
 async function loadMenu() {
@@ -1064,7 +1103,9 @@ async function loadMenu() {
   if (!res.ok || !data || !data.ok) throw new Error((data && data.error) || 'request failed');
   RESTAURANT = {
     name: data.restaurant.name, phone: data.restaurant.phone, phoneTel: data.restaurant.phoneTel,
-    address: data.restaurant.address, hoursRu: data.restaurant.hoursRu, hoursEn: data.restaurant.hoursEn
+    address: data.restaurant.address, hoursRu: data.restaurant.hoursRu, hoursEn: data.restaurant.hoursEn,
+    paymentEnabled: !!data.restaurant.paymentEnabled,
+    kaspiQrUrl: data.restaurant.kaspiQrUrl, kaspiDisplayName: data.restaurant.kaspiDisplayName
   };
   CATS = data.categories.map(c => c.nameRu);
   CAT_META = {};

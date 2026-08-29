@@ -64,6 +64,9 @@
   .modal-actions-right { display: flex; gap: 10px; }
   .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--ink); color: #fff; font-size: 13px; font-weight: 600; padding: 11px 20px; border-radius: 999px; z-index: 60; }
   .empty-hint { color: var(--muted-2); font-size: 13px; padding: 30px; text-align: center; }
+  .card { background: var(--surface); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 3px 16px rgba(0,0,0,0.06); }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .qr-preview { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--bg); flex: none; }
 </style>
 </head>
 <body>
@@ -85,6 +88,26 @@
       <a href="./" target="_blank" style="align-self:center; font-size:12.5px; color:var(--muted-2);">Открыть меню →</a>
     </div>
   </div>
+
+  <div class="card" id="paymentCard">
+    <h2>Оплата</h2>
+    <label class="checkline"><input type="checkbox" id="paymentEnabledInput"> Требовать оплату через Kaspi перед отправкой заказа на кухню</label>
+    <div class="field">
+      <label>Как найти в Kaspi (телефон / имя получателя)</label>
+      <input type="text" id="kaspiDisplayNameInput" placeholder="Kaspi: +7 707 123 45 67, Аружан К.">
+    </div>
+    <div class="field">
+      <label>QR-код Kaspi</label>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <img id="kaspiQrPreview" class="qr-preview" hidden>
+        <button type="button" class="btn btn-outline btn-sm" id="kaspiQrFileBtn">Загрузить QR…</button>
+        <input type="file" id="kaspiQrFileInput" accept="image/*" hidden>
+      </div>
+      <div class="muted" id="kaspiQrUploadStatus" style="margin-top:5px;"></div>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" id="savePaymentBtn">Сохранить</button>
+  </div>
+
   <table>
     <thead>
       <tr><th>Блюдо</th><th>Категория</th><th>Цена</th><th>Наличие</th><th></th></tr>

@@ -1,10 +1,10 @@
-// POST /api/admin/upload — uploads a video file to Vercel Blob and returns its
-// public URL. Body is JSON { filename, contentType, dataBase64 } rather than
-// a raw binary body — Vercel's Node runtime (notably `vercel dev` locally)
-// doesn't reliably expose the raw request stream, but JSON bodies parse
-// consistently everywhere, so the client base64-encodes the file instead.
-// Requires the admin session cookie. Meant for short dish cinemagraphs, not
-// general file storage.
+// POST /api/admin/upload — uploads a video or image file to Vercel Blob and
+// returns its public URL. Body is JSON { filename, contentType, dataBase64 }
+// rather than a raw binary body — Vercel's Node runtime (notably `vercel dev`
+// locally) doesn't reliably expose the raw request stream, but JSON bodies
+// parse consistently everywhere, so the client base64-encodes the file instead.
+// Requires the admin session cookie. Meant for dish cinemagraphs and the
+// Kaspi payment QR code, not general file storage.
 
 const { put } = require('@vercel/blob');
 const { requireAuth } = require('../_auth');
@@ -20,8 +20,10 @@ module.exports = async (req, res) => {
   if (!body || typeof body !== 'object') { res.status(400).json({ ok: false, error: 'Empty request body' }); return; }
 
   const { filename, contentType, dataBase64 } = body;
-  if (typeof contentType !== 'string' || !contentType.startsWith('video/')) {
-    res.status(400).json({ ok: false, error: 'Only video files are accepted' });
+  const isVideo = typeof contentType === 'string' && contentType.startsWith('video/');
+  const isImage = typeof contentType === 'string' && contentType.startsWith('image/');
+  if (!isVideo && !isImage) {
+    res.status(400).json({ ok: false, error: 'Only image or video files are accepted' });
     return;
   }
   if (typeof dataBase64 !== 'string' || !dataBase64) {
@@ -29,15 +31,16 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const rawName = typeof filename === 'string' ? filename : 'clip.mp4';
-  const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100) || 'clip.mp4';
+  const rawName = typeof filename === 'string' ? filename : (isVideo ? 'clip.mp4' : 'image.jpg');
+  const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100) || (isVideo ? 'clip.mp4' : 'image.jpg');
+  const prefix = isVideo ? 'dish-videos' : 'payment-qr';
 
   try {
     const buffer = Buffer.from(dataBase64, 'base64');
     if (buffer.length === 0) { res.status(400).json({ ok: false, error: 'Empty file' }); return; }
     if (buffer.length > MAX_BYTES) { res.status(413).json({ ok: false, error: 'File too large (max 4MB)' }); return; }
 
-    const blob = await put(`dish-videos/${Date.now()}-${safeName}`, buffer, {
+    const blob = await put(`${prefix}/${Date.now()}-${safeName}`, buffer, {
       access: 'public',
       contentType,
       addRandomSuffix: false

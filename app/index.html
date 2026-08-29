@@ -245,6 +245,23 @@
     </div>
   </div>
 
+  <div class="modal-backdrop modal-backdrop-center" id="paymentBackdrop" hidden>
+    <div class="modal sheet">
+      <div class="modal-head">
+        <span class="modal-title" id="paymentModalTitle"></span>
+        <button type="button" class="icon-btn" id="paymentCloseBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="payment-body">
+        <img class="payment-qr" id="paymentQrImg" alt="Kaspi QR">
+        <div class="payment-amount" id="paymentAmount"></div>
+        <div class="payment-hint" id="paymentHint"></div>
+      </div>
+      <button type="button" class="btn-dark btn-block" id="paymentPaidBtn"></button>
+    </div>
+  </div>
+
   <div class="toast" id="toast" hidden></div>
 
 </div>

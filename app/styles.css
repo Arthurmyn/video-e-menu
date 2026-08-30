@@ -357,6 +357,24 @@ main { padding-top: 4px; }
 .summary-hr { height: 1px; background: var(--border); margin: 12px 0; }
 .summary-total { font-size: 16px; font-weight: 800; color: var(--ink); }
 .summary-total span { font-weight: 800 !important; color: var(--ink) !important; }
+
+/* ---------- Order status screen ---------- */
+.status-hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 22px 0 6px; }
+.status-ring-wrap { position: relative; width: 120px; height: 120px; }
+.status-ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+.status-ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+.status-ring-fg { fill: none; stroke: #F5B800; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.status-ring-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.status-title { font-size: 19px; font-weight: 900; color: var(--ink); margin-top: 18px; letter-spacing: -0.3px; }
+.status-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.status-ready-note { font-size: 12.5px; color: var(--accent); font-weight: 700; margin-top: 8px; }
+.status-items { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+.status-item { background: var(--surface); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-md); }
+.status-item-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.status-item-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.status-item-price { font-size: 14px; font-weight: 800; color: var(--ink); flex: none; margin-left: 12px; }
+.status-summary { margin-top: 14px; }
+.status-dismiss { display: block; margin: 20px auto 0; }
 .btn-place-order {
   width: 100%; margin-top: 16px; border: none; font-family: inherit; background: var(--accent); color: #fff;
   border-radius: 20px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
@@ -375,6 +393,25 @@ main { padding-top: 4px; }
 .cart-bar:hover { background: var(--accent-dark); }
 .cart-bar-left { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
 .cart-bar-count { background: var(--ink); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+
+/* floating "ready in X min" pill — stacked one slot above the cart bar so the two never overlap */
+.ready-bar-wrap { position: fixed; left: 18px; right: 18px; bottom: 172px; z-index: 15; max-width: calc(var(--container-max) - 36px); margin: 0 auto; }
+@media (min-width: 900px) { .ready-bar-wrap { bottom: 96px; } }
+.ready-bar {
+  width: 100%; border: none; font-family: inherit; background: var(--ink); color: #fff; border-radius: 22px;
+  padding: 9px 10px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+  box-shadow: var(--shadow-lg); transition: transform .15s ease; animation: scrIn .2s ease;
+}
+.ready-bar:hover { transform: translateY(-1px); }
+.ready-bar-icon { position: relative; width: 44px; height: 44px; flex: none; }
+.ready-ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ready-ring-bg { fill: none; stroke: rgba(255,255,255,0.16); stroke-width: 3; }
+.ready-ring-fg { fill: none; stroke: #F5B800; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.ready-bar-logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ready-bar-text { flex: 1; min-width: 0; text-align: left; display: flex; flex-direction: column; }
+.ready-bar-title { font-size: 13.5px; font-weight: 800; color: #fff; }
+.ready-bar-sub { font-size: 11.5px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.ready-bar-view { flex: none; font-size: 12px; font-weight: 700; color: #fff; background: rgba(255,255,255,0.14); padding: 9px 14px; border-radius: 999px; }
 
 /* ---------- Bottom nav (mobile) ---------- */
 .bottom-nav {

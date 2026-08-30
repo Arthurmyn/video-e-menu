@@ -131,6 +131,8 @@ module.exports = async (req, res) => {
   }
 
   res.status(200).json(
-    autoConfirm && orderId ? { ok: true, orderId, awaitConfirmation: true } : { ok: true }
+    orderId
+      ? { ok: true, orderId, awaitConfirmation: autoConfirm ? true : undefined }
+      : { ok: true }
   );
 };

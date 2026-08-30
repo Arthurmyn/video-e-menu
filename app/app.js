@@ -96,7 +96,10 @@ const I18N = {
     paymentChooseTitle: 'Способ оплаты', paymentMethodCash: 'Наличными / картой официанту', paymentMethodKaspi: 'Kaspi',
     paymentWaitTitle: 'Ждём подтверждения оплаты…', paymentWaitSub: 'Обычно это занимает несколько секунд после перевода.',
     paymentTimeoutTitle: 'Не удалось подтвердить автоматически', paymentTimeoutSub: 'Заказ передан официанту — он свяжется с вами.',
-    paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть'
+    paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть',
+    readyInPrefix: 'Готово через ', orderReadyTitle: 'Заказ готов!', orderReadySub: 'Официант уже несёт ваш заказ',
+    orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа', statusDismiss: 'Скрыть уведомление',
+    statusTotalLabel: 'Итого'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -136,7 +139,10 @@ const I18N = {
     paymentChooseTitle: 'Payment method', paymentMethodCash: 'Cash / card with the waiter', paymentMethodKaspi: 'Kaspi',
     paymentWaitTitle: 'Waiting for payment confirmation…', paymentWaitSub: 'This usually takes a few seconds after you pay.',
     paymentTimeoutTitle: "Couldn't confirm automatically", paymentTimeoutSub: "Your order was sent to staff — they'll follow up.",
-    paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close'
+    paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close',
+    readyInPrefix: 'Ready in ', orderReadyTitle: 'Order ready!', orderReadySub: 'Your order is on its way',
+    orderNumLabel: 'Order #', statusHeading: 'Order status', statusDismiss: 'Dismiss',
+    statusTotalLabel: 'Total'
   }
 };
 
@@ -237,7 +243,8 @@ const state = {
   cart: {}, fav: {}, query: '', lang: 0, toast: '',
   infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, paymentOpen: false, paymentPhase: 'pay', fMin: '', fMax: '',
   fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default',
-  suggestId: null, suggestList: []
+  suggestId: null, suggestList: [],
+  activeOrder: null // { id, table, items, total, totalMs, readyAt } — simulated prep-time tracker for the "ready in X min" pill
 };
 
 let pendingOrder = null; // { entries, total } stashed while the payment modal is open, not persisted
@@ -463,11 +470,14 @@ function loadPersisted() {
     }
     state.fav = cleanFav;
   }
+  if (saved.activeOrder && typeof saved.activeOrder === 'object' && Number.isFinite(saved.activeOrder.readyAt)) {
+    state.activeOrder = saved.activeOrder;
+  }
 }
 
 function persist() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ cart: state.cart, fav: state.fav }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ cart: state.cart, fav: state.fav, activeOrder: state.activeOrder }));
   } catch (e) { /* private mode / storage full — cart just won't survive reload */ }
 }
 
@@ -479,7 +489,7 @@ function setHash(screen, id) {
 }
 function applyHash() {
   const [screen, id] = location.hash.replace('#', '').split('/');
-  if (['home', 'menu', 'fav', 'cart', 'detail'].includes(screen)) {
+  if (['home', 'menu', 'fav', 'cart', 'detail', 'orderstatus'].includes(screen)) {
     state.screen = screen;
     if (screen === 'detail') {
       // Validated against DISHES once loadMenu() has populated it — see init().
@@ -561,6 +571,7 @@ function renderAll() {
   renderStrips();
   renderScreens();
   renderCartBar();
+  renderReadyBar();
   renderToast();
   renderModals();
 }
@@ -726,7 +737,7 @@ function bindDishCardEvents(root) {
 }
 
 function renderScreens() {
-  ['home', 'menu', 'fav', 'cart', 'detail'].forEach(s => {
+  ['home', 'menu', 'fav', 'cart', 'detail', 'orderstatus'].forEach(s => {
     byId('screen-' + s).setAttribute('data-active', String(state.screen === s));
   });
 
@@ -767,6 +778,7 @@ function renderScreens() {
 
   renderCartScreen();
   renderDetailScreen();
+  if (state.activeOrder) renderOrderStatusScreen();
 }
 
 function emptyResultsHtml() {
@@ -837,7 +849,7 @@ let paymentPollTimer = null;
 const PAYMENT_POLL_MS = 3000;
 const PAYMENT_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
-function startPaymentPoll(orderId) {
+function startPaymentPoll(orderId, entries, total) {
   clearInterval(paymentPollTimer);
   const deadline = Date.now() + PAYMENT_POLL_TIMEOUT_MS;
   paymentPollTimer = setInterval(async () => {
@@ -854,6 +866,7 @@ function startPaymentPoll(orderId) {
       if (data && data.ok && data.status === 'confirmed') {
         clearInterval(paymentPollTimer);
         paymentPollTimer = null;
+        startOrderTracking(orderId, entries, total);
         state.cart = {};
         state.paymentOpen = false;
         go('home');
@@ -861,6 +874,108 @@ function startPaymentPoll(orderId) {
       }
     } catch (e) { /* transient network hiccup — keep polling until the timeout */ }
   }, PAYMENT_POLL_MS);
+}
+
+/* --------------------------------------------------------- order-ready tracking --------------------------------------------------------- */
+/* A simulated ETA, not a real kitchen status — there's no ticket system to
+   drive it from, so it's estimated from the ordered dishes' own prep-time
+   data (already seeded per dish) and never claims to be authoritative. */
+
+const DEFAULT_PREP_MIN = 10;
+let readyTickTimer = null;
+
+function startOrderTracking(orderId, entries, total) {
+  const minutes = Math.max(...entries.map(c => c.dish.time || DEFAULT_PREP_MIN));
+  state.activeOrder = {
+    id: orderId,
+    table: tableLabelRu(),
+    items: entries.map(c => ({
+      name: c.dish.name,
+      size: c.dish.sizes[c.size].label,
+      qty: c.qty,
+      lineTotal: c.dish.sizes[c.size].price * c.qty
+    })),
+    total,
+    totalMs: minutes * 60000,
+    readyAt: Date.now() + minutes * 60000
+  };
+  persist();
+  ensureReadyTicking();
+}
+
+function dismissOrderTracking() {
+  state.activeOrder = null;
+  persist();
+  clearInterval(readyTickTimer);
+  readyTickTimer = null;
+  go('home');
+}
+
+function ensureReadyTicking() {
+  if (readyTickTimer) return;
+  readyTickTimer = setInterval(() => {
+    if (!state.activeOrder) { clearInterval(readyTickTimer); readyTickTimer = null; return; }
+    renderReadyBar();
+    if (state.screen === 'orderstatus') renderOrderStatusScreen();
+  }, 1000);
+}
+
+function paintRing(circleEl, fraction) {
+  const r = circleEl.r.baseVal.value;
+  const circ = 2 * Math.PI * r;
+  circleEl.style.strokeDasharray = String(circ);
+  circleEl.style.strokeDashoffset = String(circ * (1 - fraction));
+}
+
+function readyInfo() {
+  const order = state.activeOrder;
+  if (!order) return null;
+  const remaining = Math.max(0, order.readyAt - Date.now());
+  const fraction = order.totalMs > 0 ? Math.min(1, remaining / order.totalMs) : 0;
+  const ready = remaining <= 0;
+  const mins = Math.max(1, Math.ceil(remaining / 60000));
+  const title = ready ? t('orderReadyTitle') : t('readyInPrefix') + mins + ' ' + t('min');
+  const qtyCount = order.items.reduce((a, i) => a + i.qty, 0);
+  const sub = t('orderNumLabel') + order.id + ' · ' + positionsLabel(qtyCount);
+  return { fraction, ready, title, sub };
+}
+
+function renderReadyBar() {
+  const wrap = byId('readyBarWrap');
+  const info = readyInfo();
+  const show = !!info && state.screen !== 'orderstatus';
+  wrap.hidden = !show;
+  if (!show) return;
+  byId('readyBarTitle').textContent = info.title;
+  byId('readyBarSub').textContent = info.sub;
+  byId('readyBarView').textContent = t('viewOrder');
+  paintRing(byId('readyRingFg'), info.fraction);
+}
+
+function renderOrderStatusScreen() {
+  const order = state.activeOrder;
+  const info = readyInfo();
+  if (!order || !info) return;
+  byId('statusTableLabel').textContent = order.table;
+  byId('statusHeading').textContent = t('statusHeading');
+  byId('statusTitle').textContent = info.title;
+  byId('statusSub').textContent = info.sub;
+  byId('statusReadyNote').hidden = !info.ready;
+  byId('statusReadyNote').textContent = t('orderReadySub');
+  paintRing(byId('statusRingFg'), info.fraction);
+
+  byId('statusItems').innerHTML = order.items.map(it => `
+    <div class="status-item">
+      <div>
+        <div class="status-item-name">${esc(it.name)}</div>
+        <div class="status-item-meta">${it.size ? esc(it.size) + ' · ' : ''}× ${it.qty}</div>
+      </div>
+      <div class="status-item-price">${money(it.lineTotal)}</div>
+    </div>`).join('');
+
+  byId('statusTotalLabel').textContent = t('statusTotalLabel');
+  byId('statusTotal').textContent = money(order.total);
+  byId('statusDismissBtn').textContent = t('statusDismiss');
 }
 
 async function submitOrder(entries, total, opts) {
@@ -896,10 +1011,11 @@ async function submitOrder(entries, total, opts) {
     if (viaPaymentModal && data.awaitConfirmation && data.orderId) {
       state.paymentPhase = 'waiting';
       renderModals();
-      startPaymentPoll(data.orderId);
+      startPaymentPoll(data.orderId, entries, total);
       return;
     }
 
+    if (data.orderId) startOrderTracking(data.orderId, entries, total);
     state.cart = {};
     if (viaPaymentModal) closePaymentModal();
     go('home');
@@ -1192,6 +1308,10 @@ function bindStaticEvents() {
     const order = pendingOrder;
     if (order) submitOrder(order.entries, order.total, { viaPaymentModal: true, method: 'kaspi' });
   });
+
+  byId('readyBarBtn').addEventListener('click', () => go('orderstatus'));
+  byId('statusBackBtn').addEventListener('click', () => go('home'));
+  byId('statusDismissBtn').addEventListener('click', dismissOrderTracking);
 }
 
 async function loadMenu() {
@@ -1223,7 +1343,6 @@ function showLoadError() {
 }
 
 async function init() {
-  loadPersisted();
   applyHash();
   bindStaticEvents();
   try {
@@ -1233,8 +1352,12 @@ async function init() {
     showLoadError();
     return;
   }
+  // Runs only after DISHES is populated — loadPersisted() filters cart/fav/activeOrder
+  // against real dish ids, so calling it earlier (against an empty DISHES) would wipe them every load.
+  loadPersisted();
   if (!state.detailId && DISHES.length) state.detailId = DISHES[0].id;
   if (state.screen === 'detail' && !DISHES.some(d => d.id === state.detailId)) state.screen = 'home';
+  if (state.activeOrder) ensureReadyTicking();
   byId('initialLoading').hidden = true;
   byId('app').hidden = false;
   renderAll();

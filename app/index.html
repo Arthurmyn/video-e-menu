@@ -138,12 +138,65 @@
     <section id="screen-detail" class="screen">
       <div id="detailContent"></div>
     </section>
+
+    <section id="screen-orderstatus" class="screen">
+      <div class="screen-header">
+        <button type="button" class="icon-btn back-btn" id="statusBackBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.4"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+        </button>
+        <div>
+          <div class="screen-sub" id="statusTableLabel"></div>
+          <h2 class="screen-heading" id="statusHeading"></h2>
+        </div>
+      </div>
+
+      <div class="status-hero">
+        <div class="status-ring-wrap">
+          <svg class="status-ring" viewBox="0 0 120 120" width="120" height="120">
+            <circle class="status-ring-bg" cx="60" cy="60" r="54"></circle>
+            <circle class="status-ring-fg" id="statusRingFg" cx="60" cy="60" r="54"></circle>
+          </svg>
+          <span class="status-ring-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7"><path d="M4 10h16"/><path d="M6 10v9"/><path d="M18 10v9"/><path d="M4 10a8 8 0 0 1 16 0"/></svg>
+          </span>
+        </div>
+        <div class="status-title" id="statusTitle"></div>
+        <div class="status-sub" id="statusSub"></div>
+        <div class="status-ready-note" id="statusReadyNote" hidden></div>
+      </div>
+
+      <div class="status-items" id="statusItems"></div>
+      <div class="cart-summary status-summary">
+        <div class="summary-row summary-total"><span id="statusTotalLabel"></span><span id="statusTotal"></span></div>
+      </div>
+
+      <button type="button" class="link-btn status-dismiss" id="statusDismissBtn"></button>
+    </section>
   </main>
 
   <div class="cart-bar-wrap" id="cartBarWrap" hidden>
     <button type="button" class="cart-bar" id="cartBarBtn">
       <span class="cart-bar-left"><span id="cartBarLabel"></span> <span class="cart-bar-count" id="cartBarCount"></span></span>
       <span id="cartBarTotal"></span>
+    </button>
+  </div>
+
+  <div class="ready-bar-wrap" id="readyBarWrap" hidden>
+    <button type="button" class="ready-bar" id="readyBarBtn">
+      <span class="ready-bar-icon">
+        <svg class="ready-ring" viewBox="0 0 44 44" width="44" height="44">
+          <circle class="ready-ring-bg" cx="22" cy="22" r="19"></circle>
+          <circle class="ready-ring-fg" id="readyRingFg" cx="22" cy="22" r="19"></circle>
+        </svg>
+        <span class="ready-bar-logo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="M4 10h16"/><path d="M6 10v9"/><path d="M18 10v9"/><path d="M4 10a8 8 0 0 1 16 0"/></svg>
+        </span>
+      </span>
+      <span class="ready-bar-text">
+        <span class="ready-bar-title" id="readyBarTitle"></span>
+        <span class="ready-bar-sub" id="readyBarSub"></span>
+      </span>
+      <span class="ready-bar-view" id="readyBarView"></span>
     </button>
   </div>
 

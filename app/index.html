@@ -150,7 +150,7 @@
         </div>
       </div>
 
-      <div class="status-hero">
+      <div class="status-hero" id="statusHero">
         <div class="status-ring-wrap">
           <svg class="status-ring" viewBox="0 0 120 120" width="120" height="120">
             <circle class="status-ring-bg" cx="60" cy="60" r="54"></circle>
@@ -166,11 +166,20 @@
       </div>
 
       <div class="status-items" id="statusItems"></div>
-      <div class="cart-summary status-summary">
+      <div class="cart-summary status-summary" id="statusSummaryBlock">
         <div class="summary-row summary-total"><span id="statusTotalLabel"></span><span id="statusTotal"></span></div>
       </div>
 
       <button type="button" class="link-btn status-dismiss" id="statusDismissBtn"></button>
+
+      <div class="empty-state" id="statusEmpty" hidden>
+        <div class="empty-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div class="empty-title" id="statusEmptyTitle"></div>
+        <div class="empty-sub" id="statusEmptySub"></div>
+        <button type="button" class="btn-dark" id="statusEmptyBtn"></button>
+      </div>
     </section>
   </main>
 

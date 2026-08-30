@@ -61,7 +61,7 @@ const I18N = {
   ru: {
     dineIn: 'Зал', searchPlaceholder: 'Поиск по меню',
     heroLine1: 'Проголодались?', heroLine2: 'Выбирайте и заказывайте.',
-    navHome: 'Главная', navMenu: 'Меню', navFav: 'Избранное', navCart: 'Корзина',
+    navHome: 'Главная', navMenu: 'Меню', navFav: 'Избранное', navCart: 'Корзина', navOrderStatus: 'Заказ',
     fullMenu: 'Всё меню', allCats: 'Все',
     tabAll: 'Все блюда', tabPopular: 'Популярные', tabOffer: 'Со скидкой',
     favTitle: 'Избранное', favEmptyTitle: 'Пока нет избранного',
@@ -99,12 +99,13 @@ const I18N = {
     paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть',
     readyInPrefix: 'Готово через ', orderReadyTitle: 'Заказ готов!', orderReadySub: 'Официант уже несёт ваш заказ',
     orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа', statusDismiss: 'Скрыть уведомление',
-    statusTotalLabel: 'Итого'
+    statusTotalLabel: 'Итого', statusEmptyTitle: 'Нет активных заказов',
+    statusEmptySub: 'Здесь появится статус, когда вы отправите заказ на кухню.'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
     heroLine1: 'Hungry?', heroLine2: 'Pick something and order.',
-    navHome: 'Home', navMenu: 'Menu', navFav: 'Favorites', navCart: 'Cart',
+    navHome: 'Home', navMenu: 'Menu', navFav: 'Favorites', navCart: 'Cart', navOrderStatus: 'Order',
     fullMenu: 'Full menu', allCats: 'All',
     tabAll: 'All dishes', tabPopular: 'Popular', tabOffer: 'On offer',
     favTitle: 'Favorites', favEmptyTitle: 'No favorites yet',
@@ -142,7 +143,8 @@ const I18N = {
     paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close',
     readyInPrefix: 'Ready in ', orderReadyTitle: 'Order ready!', orderReadySub: 'Your order is on its way',
     orderNumLabel: 'Order #', statusHeading: 'Order status', statusDismiss: 'Dismiss',
-    statusTotalLabel: 'Total'
+    statusTotalLabel: 'Total', statusEmptyTitle: 'No active orders',
+    statusEmptySub: "Status will show up here once you've sent an order to the kitchen."
   }
 };
 
@@ -230,7 +232,8 @@ const NAV_ITEMS = [
   { key: 'home', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8Z"/></svg>' },
   { key: 'menu', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>' },
   { key: 'fav', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="' + HEART_D + '"/></svg>' },
-  { key: 'cart', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M3 4h2l2.5 11h11L21 7H6"/></svg>' }
+  { key: 'cart', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M3 4h2l2.5 11h11L21 7H6"/></svg>' },
+  { key: 'orderstatus', icon: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' }
 ];
 
 /* --------------------------------------------------------------- state ---------------------------------------------------------------- */
@@ -588,7 +591,7 @@ function renderBrand() {
   byId('infoBtn').title = t('goodToKnow');
 }
 
-const NAV_LABEL_KEY = { home: 'navHome', menu: 'navMenu', fav: 'navFav', cart: 'navCart' };
+const NAV_LABEL_KEY = { home: 'navHome', menu: 'navMenu', fav: 'navFav', cart: 'navCart', orderstatus: 'navOrderStatus' };
 
 function renderNav() {
   const showNav = state.screen !== 'detail';
@@ -598,7 +601,10 @@ function renderNav() {
   const itemHtml = (navItem, withLabel) => {
     const active = state.screen === navItem.key;
     const badgeCount = navItem.key === 'fav' ? favCount : navItem.key === 'cart' ? cCount : 0;
-    const badge = badgeCount > 0 ? `<span class="${withLabel ? 'nav-badge' : 'bn-badge'}">${badgeCount}</span>` : '';
+    const badgeClass = withLabel ? 'nav-badge' : 'bn-badge';
+    const badge = badgeCount > 0
+      ? `<span class="${badgeClass}">${badgeCount}</span>`
+      : (navItem.key === 'orderstatus' && state.activeOrder ? `<span class="${badgeClass} nav-dot"></span>` : '');
     const iconColor = active ? '#fff' : '#8B8580';
     return `<button type="button" class="${withLabel ? 'nav-btn' : 'bn-btn'} ${active ? 'active' : ''}" data-go="${navItem.key}">
       ${navItem.icon.replace('stroke-width="2"', `stroke-width="2" stroke="${iconColor}"`)}
@@ -778,7 +784,7 @@ function renderScreens() {
 
   renderCartScreen();
   renderDetailScreen();
-  if (state.activeOrder) renderOrderStatusScreen();
+  renderOrderStatusScreen();
 }
 
 function emptyResultsHtml() {
@@ -908,7 +914,7 @@ function dismissOrderTracking() {
   persist();
   clearInterval(readyTickTimer);
   readyTickTimer = null;
-  go('home');
+  renderAll();
 }
 
 function ensureReadyTicking() {
@@ -950,14 +956,80 @@ function renderReadyBar() {
   byId('readyBarSub').textContent = info.sub;
   byId('readyBarView').textContent = t('viewOrder');
   paintRing(byId('readyRingFg'), info.fraction);
+  if (!readySwipeDragging) {
+    const btn = byId('readyBarBtn');
+    btn.style.transform = '';
+    btn.style.opacity = '';
+  }
+}
+
+/* Swipe-up-to-dismiss on the ready-bar, like a phone notification. Pointer
+   events cover touch and mouse alike. A real drag suppresses the click that
+   would otherwise fire on release, so a light tap still opens the status screen. */
+let readySwipeDragging = false;
+function bindReadyBarSwipe() {
+  const btn = byId('readyBarBtn');
+  let startY = 0;
+  let currentDy = 0;
+  let dragged = false;
+
+  btn.addEventListener('pointerdown', e => {
+    readySwipeDragging = true;
+    dragged = false;
+    startY = e.clientY;
+    currentDy = 0;
+    btn.style.transition = 'none';
+    btn.setPointerCapture(e.pointerId); // keeps move/up routed here once the pill translates away from the pointer
+  });
+  btn.addEventListener('pointermove', e => {
+    if (!readySwipeDragging) return;
+    currentDy = Math.min(0, e.clientY - startY);
+    if (Math.abs(currentDy) > 8) dragged = true;
+    btn.style.transform = `translateY(${currentDy}px)`;
+    btn.style.opacity = String(Math.max(0.15, 1 + currentDy / 100));
+  });
+  const endDrag = () => {
+    if (!readySwipeDragging) return;
+    readySwipeDragging = false;
+    btn.style.transition = 'transform .2s ease, opacity .2s ease';
+    if (currentDy < -50) {
+      btn.style.transform = 'translateY(-140px)';
+      btn.style.opacity = '0';
+      setTimeout(dismissOrderTracking, 180);
+    } else {
+      btn.style.transform = '';
+      btn.style.opacity = '';
+    }
+  };
+  btn.addEventListener('pointerup', endDrag);
+  btn.addEventListener('pointercancel', endDrag);
+  btn.addEventListener('click', e => {
+    if (dragged) { e.preventDefault(); e.stopPropagation(); return; }
+    go('orderstatus');
+  });
 }
 
 function renderOrderStatusScreen() {
+  byId('statusHeading').textContent = t('statusHeading');
+  byId('statusTableLabel').textContent = tableLabel();
+
   const order = state.activeOrder;
   const info = readyInfo();
-  if (!order || !info) return;
-  byId('statusTableLabel').textContent = order.table;
-  byId('statusHeading').textContent = t('statusHeading');
+  const hasOrder = !!(order && info);
+
+  byId('statusHero').hidden = !hasOrder;
+  byId('statusItems').hidden = !hasOrder;
+  byId('statusSummaryBlock').hidden = !hasOrder;
+  byId('statusDismissBtn').hidden = !hasOrder;
+  byId('statusEmpty').hidden = hasOrder;
+
+  if (!hasOrder) {
+    byId('statusEmptyTitle').textContent = t('statusEmptyTitle');
+    byId('statusEmptySub').textContent = t('statusEmptySub');
+    byId('statusEmptyBtn').textContent = t('cartOpenMenu');
+    return;
+  }
+
   byId('statusTitle').textContent = info.title;
   byId('statusSub').textContent = info.sub;
   byId('statusReadyNote').hidden = !info.ready;
@@ -1309,9 +1381,10 @@ function bindStaticEvents() {
     if (order) submitOrder(order.entries, order.total, { viaPaymentModal: true, method: 'kaspi' });
   });
 
-  byId('readyBarBtn').addEventListener('click', () => go('orderstatus'));
   byId('statusBackBtn').addEventListener('click', () => go('home'));
-  byId('statusDismissBtn').addEventListener('click', dismissOrderTracking);
+  byId('statusEmptyBtn').addEventListener('click', () => go('menu'));
+  byId('statusDismissBtn').addEventListener('click', () => { dismissOrderTracking(); go('home'); });
+  bindReadyBarSwipe();
 }
 
 async function loadMenu() {

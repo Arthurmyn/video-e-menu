@@ -59,6 +59,9 @@ input { font-family: inherit; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .screen[data-active="true"] { animation: scrIn .2s ease; }
 
+@keyframes gridFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.grid-fade-in { animation: gridFadeIn .25s ease; }
+
 /* ---------- Header ---------- */
 .site-header {
   position: sticky;
@@ -182,9 +185,9 @@ input { font-family: inherit; }
   border: 2px solid var(--bg);
 }
 
-.hero { padding-top: 20px; }
+.hero { padding-top: 14px; }
 .hero h1 {
-  font-size: 28px; font-weight: 900; color: var(--ink); line-height: 1.12; letter-spacing: -0.6px;
+  font-size: 20px; font-weight: 900; color: var(--ink); line-height: 1.2; letter-spacing: -0.4px;
 }
 .hero h1 span { color: var(--muted); font-weight: 700; }
 

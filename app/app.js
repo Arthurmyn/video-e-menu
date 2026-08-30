@@ -746,6 +746,18 @@ function bindDishCardEvents(root) {
   }));
 }
 
+/* Replays the grid's fade-in animation only when the actual set/order of
+   cards shown changes (category, search, filters, sort) — not on every
+   render (e.g. toggling a heart shouldn't make the whole grid flicker). */
+const lastGridSig = {};
+function replayAnimOnChange(el, key, sig) {
+  if (lastGridSig[key] === sig) return;
+  lastGridSig[key] = sig;
+  el.classList.remove('grid-fade-in');
+  void el.offsetWidth; // force reflow so the animation restarts
+  el.classList.add('grid-fade-in');
+}
+
 function renderScreens() {
   ['home', 'menu', 'fav', 'cart', 'detail', 'orderstatus'].forEach(s => {
     byId('screen-' + s).setAttribute('data-active', String(state.screen === s));
@@ -759,8 +771,10 @@ function renderScreens() {
   // Home
   byId('homeTitle').textContent = catLabel(state.cat) + ' · ' + positionsLabel(list.length);
   const homeGrid = byId('homeGrid');
-  homeGrid.innerHTML = list.slice(0, 12).map(dishCardHtml).join('') || emptyResultsHtml();
+  const homeList = list.slice(0, 12);
+  homeGrid.innerHTML = homeList.map(dishCardHtml).join('') || emptyResultsHtml();
   bindDishCardEvents(homeGrid);
+  replayAnimOnChange(homeGrid, 'home', homeList.map(d => d.id).join(','));
   byId('fullMenuBtn').textContent = t('fullMenu');
   byId('fullMenuBtn').onclick = () => go('menu');
 
@@ -770,6 +784,7 @@ function renderScreens() {
   const menuGrid = byId('menuGrid');
   menuGrid.innerHTML = menuList.map(rowCardHtml).join('') || emptyResultsHtml();
   bindDishCardEvents(menuGrid);
+  replayAnimOnChange(menuGrid, 'menu', menuList.map(d => d.id).join(','));
 
   // Favorites
   const favs = favList();

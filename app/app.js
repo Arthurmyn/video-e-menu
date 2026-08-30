@@ -98,7 +98,7 @@ const I18N = {
     paymentTimeoutTitle: 'Не удалось подтвердить автоматически', paymentTimeoutSub: 'Заказ передан официанту — он свяжется с вами.',
     paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть',
     readyInPrefix: 'Готово через ', orderReadyTitle: 'Заказ готов!', orderReadySub: 'Официант уже несёт ваш заказ',
-    orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа', statusDismiss: 'Завершить отслеживание',
+    orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа',
     statusTotalLabel: 'Итого', statusEmptyTitle: 'Нет активных заказов',
     statusEmptySub: 'Здесь появится статус, когда вы отправите заказ на кухню.'
   },
@@ -142,7 +142,7 @@ const I18N = {
     paymentTimeoutTitle: "Couldn't confirm automatically", paymentTimeoutSub: "Your order was sent to staff — they'll follow up.",
     paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close',
     readyInPrefix: 'Ready in ', orderReadyTitle: 'Order ready!', orderReadySub: 'Your order is on its way',
-    orderNumLabel: 'Order #', statusHeading: 'Order status', statusDismiss: 'Stop tracking',
+    orderNumLabel: 'Order #', statusHeading: 'Order status',
     statusTotalLabel: 'Total', statusEmptyTitle: 'No active orders',
     statusEmptySub: "Status will show up here once you've sent an order to the kitchen."
   }
@@ -914,22 +914,12 @@ function startOrderTracking(orderId, entries, total) {
   ensureReadyTicking();
 }
 
-// Swiping/dismissing the floating pill only hides the pill — the order is
-// still tracked and stays visible on the "Заказ" nav tab. Only the explicit
-// action on that screen (dismissOrderTracking) actually forgets the order.
+// Swiping the floating pill away only hides the pill — the order is still
+// tracked and stays visible on the "Заказ" nav tab until a new order replaces it.
 function hideReadyBar() {
   state.readyBarHidden = true;
   persist();
   renderReadyBar();
-}
-
-function dismissOrderTracking() {
-  state.activeOrder = null;
-  state.readyBarHidden = false;
-  persist();
-  clearInterval(readyTickTimer);
-  readyTickTimer = null;
-  renderAll();
 }
 
 function ensureReadyTicking() {
@@ -1035,7 +1025,6 @@ function renderOrderStatusScreen() {
   byId('statusHero').hidden = !hasOrder;
   byId('statusItems').hidden = !hasOrder;
   byId('statusSummaryBlock').hidden = !hasOrder;
-  byId('statusDismissBtn').hidden = !hasOrder;
   byId('statusEmpty').hidden = hasOrder;
 
   if (!hasOrder) {
@@ -1062,7 +1051,6 @@ function renderOrderStatusScreen() {
 
   byId('statusTotalLabel').textContent = t('statusTotalLabel');
   byId('statusTotal').textContent = money(order.total);
-  byId('statusDismissBtn').textContent = t('statusDismiss');
 }
 
 async function submitOrder(entries, total, opts) {
@@ -1398,7 +1386,6 @@ function bindStaticEvents() {
 
   byId('statusBackBtn').addEventListener('click', () => go('home'));
   byId('statusEmptyBtn').addEventListener('click', () => go('menu'));
-  byId('statusDismissBtn').addEventListener('click', () => { dismissOrderTracking(); go('home'); });
   bindReadyBarSwipe();
 }
 

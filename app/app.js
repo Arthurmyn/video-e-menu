@@ -252,6 +252,35 @@ const money = n => n.toLocaleString('ru-RU') + ' ₸';
 const byId = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* Mobile browsers (iOS Safari in particular) cap how many <video> elements
+   can decode/autoplay at once — with dozens of cinemagraphs on a grid, most
+   just freeze on their poster frame (looking like a plain photo) instead of
+   animating, and a newly opened detail-page video can fail to start at all
+   because the off-screen grid videos are still holding decode slots. Only
+   autoplaying whatever's actually in the viewport keeps well under that
+   limit and pauses everything else — including for free whenever a whole
+   screen is hidden via [data-active="false"], since non-rendered elements
+   report as non-intersecting. */
+let gridVideoObserver = null;
+function ensureGridVideoObserver() {
+  if (gridVideoObserver) return gridVideoObserver;
+  gridVideoObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.play().catch(() => {});
+      else entry.target.pause();
+    });
+  }, { rootMargin: '150px 0px', threshold: 0.15 });
+  return gridVideoObserver;
+}
+// Call once before replacing any grid's innerHTML (disconnects every prior
+// observation so old, now-detached <video> elements don't linger forever),
+// then observeGridVideos() on each grid after its fresh content is in the DOM.
+function resetGridVideoObserver() { if (gridVideoObserver) gridVideoObserver.disconnect(); }
+function observeGridVideos(container) {
+  ensureGridVideoObserver();
+  container.querySelectorAll('video').forEach(v => gridVideoObserver.observe(v));
+}
+
 /* --------------------------------------------------------------- icons ---------------------------------------------------------------- */
 
 const HEART_D = 'M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l8.8 8.8 8.8-8.8a5.5 5.5 0 0 0 0-7.8Z';
@@ -823,6 +852,8 @@ function renderScreens() {
     byId('screen-' + s).setAttribute('data-active', String(state.screen === s));
   });
 
+  resetGridVideoObserver();
+
   const list = sortList(DISHES.filter(d =>
     matchesCat(d) && matchesQuery(d) && matchesPrice(d) && matchesPrepTime(d) &&
     matchesSpicy(d) && matchesVegOnly(d) && matchesOfferOnly(d) && matchesRecommendedOnly(d)
@@ -834,6 +865,7 @@ function renderScreens() {
   const homeList = list.slice(0, 12);
   homeGrid.innerHTML = homeList.map(dishCardHtml).join('') || emptyResultsHtml();
   bindDishCardEvents(homeGrid);
+  observeGridVideos(homeGrid);
   replayAnimOnChange(homeGrid, 'home', homeList.map(d => d.id).join(','));
   byId('fullMenuBtn').textContent = t('fullMenu');
   byId('fullMenuBtn').onclick = () => go('menu');
@@ -844,6 +876,7 @@ function renderScreens() {
   const menuGrid = byId('menuGrid');
   menuGrid.innerHTML = menuList.map(rowCardHtml).join('') || emptyResultsHtml();
   bindDishCardEvents(menuGrid);
+  observeGridVideos(menuGrid);
   replayAnimOnChange(menuGrid, 'menu', menuList.map(d => d.id).join(','));
 
   // Favorites
@@ -853,6 +886,7 @@ function renderScreens() {
   const favGrid = byId('favGrid');
   favGrid.innerHTML = favs.map(rowCardHtml).join('');
   bindDishCardEvents(favGrid);
+  observeGridVideos(favGrid);
   favGrid.hidden = favs.length === 0;
   byId('favEmpty').hidden = favs.length > 0;
   byId('favEmptyTitle').textContent = t('favEmptyTitle');
@@ -1254,7 +1288,16 @@ function renderDetailScreen() {
       </div>
     </div>` : ''}`;
 
-  if (suggestions.length) bindDishCardEvents(byId('detailSuggestRow'));
+  if (suggestions.length) {
+    bindDishCardEvents(byId('detailSuggestRow'));
+    observeGridVideos(byId('detailSuggestRow'));
+  }
+
+  // Explicit play() as a fallback: a <video> injected via innerHTML doesn't
+  // always get its `autoplay` attribute honored on iOS Safari, especially
+  // right after the grid behind it was just holding a bunch of decode slots.
+  const detailVideo = byId('detailContent').querySelector('.detail-media video');
+  if (detailVideo) detailVideo.play().catch(() => {});
 
   byId('detailCloseBtn').onclick = () => go('menu');
   byId('detailInfoBtn').onclick = () => { state.infoOpen = true; renderModals(); };

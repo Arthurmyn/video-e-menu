@@ -98,7 +98,7 @@ const I18N = {
     paymentTimeoutTitle: 'Не удалось подтвердить автоматически', paymentTimeoutSub: 'Заказ передан официанту — он свяжется с вами.',
     paymentConfirmed: 'Оплата подтверждена, заказ передан на кухню', close: 'Закрыть',
     readyInPrefix: 'Готово через ', orderReadyTitle: 'Заказ готов!', orderReadySub: 'Официант уже несёт ваш заказ',
-    orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа', statusDismiss: 'Скрыть уведомление',
+    orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа', statusDismiss: 'Завершить отслеживание',
     statusTotalLabel: 'Итого', statusEmptyTitle: 'Нет активных заказов',
     statusEmptySub: 'Здесь появится статус, когда вы отправите заказ на кухню.'
   },
@@ -142,7 +142,7 @@ const I18N = {
     paymentTimeoutTitle: "Couldn't confirm automatically", paymentTimeoutSub: "Your order was sent to staff — they'll follow up.",
     paymentConfirmed: 'Payment confirmed, your order is on its way to the kitchen', close: 'Close',
     readyInPrefix: 'Ready in ', orderReadyTitle: 'Order ready!', orderReadySub: 'Your order is on its way',
-    orderNumLabel: 'Order #', statusHeading: 'Order status', statusDismiss: 'Dismiss',
+    orderNumLabel: 'Order #', statusHeading: 'Order status', statusDismiss: 'Stop tracking',
     statusTotalLabel: 'Total', statusEmptyTitle: 'No active orders',
     statusEmptySub: "Status will show up here once you've sent an order to the kitchen."
   }
@@ -247,7 +247,8 @@ const state = {
   infoOpen: false, filtersOpen: false, sortOpen: false, randomOpen: false, paymentOpen: false, paymentPhase: 'pay', fMin: '', fMax: '',
   fPrep: 0, fSpicy: 'any', fVegOnly: false, fOfferOnly: false, fRecommendedOnly: false, sortBy: 'default',
   suggestId: null, suggestList: [],
-  activeOrder: null // { id, table, items, total, totalMs, readyAt } — simulated prep-time tracker for the "ready in X min" pill
+  activeOrder: null, // { id, table, items, total, totalMs, readyAt } — simulated prep-time tracker for the "ready in X min" pill
+  readyBarHidden: false // dismissed the floating pill without forgetting the order — still visible on the "Заказ" tab
 };
 
 let pendingOrder = null; // { entries, total } stashed while the payment modal is open, not persisted
@@ -475,12 +476,15 @@ function loadPersisted() {
   }
   if (saved.activeOrder && typeof saved.activeOrder === 'object' && Number.isFinite(saved.activeOrder.readyAt)) {
     state.activeOrder = saved.activeOrder;
+    state.readyBarHidden = !!saved.readyBarHidden;
   }
 }
 
 function persist() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ cart: state.cart, fav: state.fav, activeOrder: state.activeOrder }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      cart: state.cart, fav: state.fav, activeOrder: state.activeOrder, readyBarHidden: state.readyBarHidden
+    }));
   } catch (e) { /* private mode / storage full — cart just won't survive reload */ }
 }
 
@@ -905,12 +909,23 @@ function startOrderTracking(orderId, entries, total) {
     totalMs: minutes * 60000,
     readyAt: Date.now() + minutes * 60000
   };
+  state.readyBarHidden = false;
   persist();
   ensureReadyTicking();
 }
 
+// Swiping/dismissing the floating pill only hides the pill — the order is
+// still tracked and stays visible on the "Заказ" nav tab. Only the explicit
+// action on that screen (dismissOrderTracking) actually forgets the order.
+function hideReadyBar() {
+  state.readyBarHidden = true;
+  persist();
+  renderReadyBar();
+}
+
 function dismissOrderTracking() {
   state.activeOrder = null;
+  state.readyBarHidden = false;
   persist();
   clearInterval(readyTickTimer);
   readyTickTimer = null;
@@ -949,7 +964,7 @@ function readyInfo() {
 function renderReadyBar() {
   const wrap = byId('readyBarWrap');
   const info = readyInfo();
-  const show = !!info && state.screen !== 'orderstatus';
+  const show = !!info && state.screen !== 'orderstatus' && !state.readyBarHidden;
   wrap.hidden = !show;
   if (!show) return;
   byId('readyBarTitle').textContent = info.title;
@@ -995,7 +1010,7 @@ function bindReadyBarSwipe() {
     if (currentDy < -50) {
       btn.style.transform = 'translateY(-140px)';
       btn.style.opacity = '0';
-      setTimeout(dismissOrderTracking, 180);
+      setTimeout(hideReadyBar, 180);
     } else {
       btn.style.transform = '';
       btn.style.opacity = '';

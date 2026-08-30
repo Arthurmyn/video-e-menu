@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   address       TEXT,
   hours_ru      TEXT,
   hours_en      TEXT,
+  hours_kz      TEXT,
   payment_enabled      BOOLEAN NOT NULL DEFAULT false, -- require Kaspi payment before an order reaches the kitchen
   kaspi_qr_url         TEXT,                           -- Blob-hosted QR image, shown to guests when payment_enabled
   kaspi_display_name   TEXT,                           -- fallback text (phone/name) if the QR won't scan
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS categories (
   restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name_ru       TEXT NOT NULL,
   name_en       TEXT NOT NULL,
+  name_kz       TEXT,
   icon_key      TEXT NOT NULL,
   sort_order    INTEGER NOT NULL DEFAULT 0,
   UNIQUE (restaurant_id, name_ru)

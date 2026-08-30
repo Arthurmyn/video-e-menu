@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     }
 
     const catRes = await client.query(
-      `SELECT id, name_ru, name_en, icon_key, sort_order FROM categories WHERE restaurant_id = $1 ORDER BY sort_order`,
+      `SELECT id, name_ru, name_en, name_kz, icon_key, sort_order FROM categories WHERE restaurant_id = $1 ORDER BY sort_order`,
       [restaurant.id]
     );
 
@@ -79,11 +79,12 @@ module.exports = async (req, res) => {
         address: restaurant.address,
         hoursRu: restaurant.hours_ru,
         hoursEn: restaurant.hours_en,
+        hoursKz: restaurant.hours_kz,
         paymentEnabled: restaurant.payment_enabled,
         kaspiQrUrl: restaurant.payment_enabled ? (restaurant.kaspi_qr_url || undefined) : undefined,
         kaspiDisplayName: restaurant.payment_enabled ? (restaurant.kaspi_display_name || undefined) : undefined
       },
-      categories: catRes.rows.map(c => ({ nameRu: c.name_ru, nameEn: c.name_en, iconKey: c.icon_key })),
+      categories: catRes.rows.map(c => ({ nameRu: c.name_ru, nameEn: c.name_en, nameKz: c.name_kz, iconKey: c.icon_key })),
       dishes: Array.from(dishesById.values())
     });
   } catch (e) {

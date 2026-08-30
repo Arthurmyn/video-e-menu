@@ -8,7 +8,7 @@ const TABLE_NUMBER_DEFAULT = '12';
    and is loaded by loadMenu() — these are just placeholders shown for the
    instant before that fetch resolves, not a second source of truth. */
 let RESTAURANT = {
-  name: 'Nauryz', phone: '', phoneTel: '', address: '', hoursRu: '', hoursEn: '',
+  name: 'Nauryz', phone: '', phoneTel: '', address: '', hoursRu: '', hoursEn: '', hoursKz: '',
   paymentEnabled: false, kaspiQrUrl: undefined, kaspiDisplayName: undefined
 };
 
@@ -25,17 +25,18 @@ const TABLE_NUMBER = resolveTableNumber();
 /* Display label respects the UI language; the kitchen order (submitOrder) always
    uses the Russian form since it's read by Nauryz staff regardless of what
    language the guest browsed in. */
-function tableLabel() { return (currentLang() === 'en' ? 'Table ' : 'Стол ') + TABLE_NUMBER; }
+function tableLabel() { return t('tableLabelPrefix') + TABLE_NUMBER; }
 function tableLabelRu() { return 'Стол ' + TABLE_NUMBER; }
 
 /* ----------------------------------------------------------------- i18n ------------------------------------------------------------------- */
-/* Real RU/EN toggle for interface chrome. Dish and category *names* stay in
-   Russian in both languages — Kazakh/Uyghur/Russian dish names (e.g. "Гуйру
-   лагман") aren't something to auto-translate without real culinary review,
-   so only category labels get an English rendering (via CAT_NAME_EN below). */
+/* Real RU/KZ/EN toggle for interface chrome. Dish and category *names* stay
+   in Russian across all three languages — Kazakh/Uyghur/Russian dish names
+   (e.g. "Гуйру лагман") aren't something to auto-translate without real
+   culinary review, so only category labels get translated (via CAT_META). */
 
 const LANGS = [
   { code: 'RU', key: 'ru', name: 'Русский' },
+  { code: 'KZ', key: 'kz', name: 'Қазақша' },
   { code: 'EN', key: 'en', name: 'English' }
 ];
 function currentLang() { return LANGS[state.lang].key; }
@@ -48,18 +49,27 @@ function ruPlural(n, one, few, many) {
   return many;
 }
 function positionsLabel(n) {
-  return currentLang() === 'en' ? n + ' ' + (n === 1 ? 'item' : 'items') : n + ' ' + ruPlural(n, 'позиция', 'позиции', 'позиций');
+  const lang = currentLang();
+  if (lang === 'en') return n + ' ' + (n === 1 ? 'item' : 'items');
+  if (lang === 'kz') return n + ' дана';
+  return n + ' ' + ruPlural(n, 'позиция', 'позиции', 'позиций');
 }
 function savedCountLabel(n) {
-  return currentLang() === 'en' ? n + ' saved' : n + ' в избранном';
+  const lang = currentLang();
+  if (lang === 'en') return n + ' saved';
+  if (lang === 'kz') return n + ' сақталды';
+  return n + ' в избранном';
 }
 function orderLineLabel(n) {
-  return t('sendToKitchen') + ' · ' + n + (currentLang() === 'en' ? (n === 1 ? ' item' : ' items') : ' поз.');
+  const lang = currentLang();
+  const unit = lang === 'en' ? (n === 1 ? ' item' : ' items') : lang === 'kz' ? ' дана' : ' поз.';
+  return t('sendToKitchen') + ' · ' + n + unit;
 }
 
 const I18N = {
   ru: {
     dineIn: 'Зал', searchPlaceholder: 'Поиск по меню',
+    tableLabelPrefix: 'Стол ', langBtnTitle: 'Сменить язык', filtersShowPrefix: 'Показать ',
     heroLine1: 'Проголодались?', heroLine2: 'Выбирайте и заказывайте.',
     navHome: 'Главная', navMenu: 'Меню', navFav: 'Избранное', navCart: 'Корзина', navOrderStatus: 'Заказ',
     fullMenu: 'Всё меню', allCats: 'Все',
@@ -104,6 +114,7 @@ const I18N = {
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
+    tableLabelPrefix: 'Table ', langBtnTitle: 'Change language', filtersShowPrefix: 'Show ',
     heroLine1: 'Hungry?', heroLine2: 'Pick something and order.',
     navHome: 'Home', navMenu: 'Menu', navFav: 'Favorites', navCart: 'Cart', navOrderStatus: 'Order',
     fullMenu: 'Full menu', allCats: 'All',
@@ -145,6 +156,51 @@ const I18N = {
     orderNumLabel: 'Order #', statusHeading: 'Order status',
     statusTotalLabel: 'Total', statusEmptyTitle: 'No active orders',
     statusEmptySub: "Status will show up here once you've sent an order to the kitchen."
+  },
+  kz: {
+    dineIn: 'Зал', searchPlaceholder: 'Мәзірден іздеу',
+    tableLabelPrefix: 'Үстел ', langBtnTitle: 'Тілді ауыстыру', filtersShowPrefix: 'Көрсету ',
+    heroLine1: 'Ашықтыңыз ба?', heroLine2: 'Таңдаңыз және тапсырыс беріңіз.',
+    navHome: 'Басты бет', navMenu: 'Мәзір', navFav: 'Таңдаулылар', navCart: 'Себет', navOrderStatus: 'Тапсырыс',
+    fullMenu: 'Толық мәзір', allCats: 'Барлығы',
+    tabAll: 'Барлық тағамдар', tabPopular: 'Танымал', tabOffer: 'Жеңілдікпен',
+    favTitle: 'Таңдаулылар', favEmptyTitle: 'Әзірге таңдаулылар жоқ',
+    favEmptySub: 'Тағамның жанындағы жүректі басып, оны осында сақтаңыз.', favBrowse: 'Мәзірді қарау',
+    cartTitle: 'Сіздің тапсырысыңыз', cartEmptyTitle: 'Тапсырыс бос',
+    cartEmptySub: 'Тапсырысты бастау үшін мәзірден тағам таңдаңыз.', cartOpenMenu: 'Мәзірді ашу',
+    viewOrder: 'Тапсырысты қарау', total: 'Жиыны', sendToKitchen: 'Асханаға жіберу',
+    sending: 'Жіберілуде…', orderSent: 'Тапсырыс асханаға жіберілді',
+    orderFailed: 'Тапсырысты жіберу мүмкін болмады — даяршыны шақырыңыз',
+    addedToCart: 'тапсырысқа қосылды', savedToFav: 'таңдаулыларға сақталды', removedFromFav: 'таңдаулылардан жойылды',
+    languageSwitched: 'Тіл', notFoundTitle: 'Ештеңе табылмады',
+    notFoundSub: 'Басқа сұрау көріңіз немесе баға сүзгісін тастаңыз.',
+    goodToKnow: 'Білгеніңіз жөн', hours: 'Жұмыс уақыты', hoursValue: 'Тәулік бойы, демалыссыз.',
+    address: 'Мекенжай', phone: 'Телефон',
+    allergens: 'Аллергендер', allergensValue: 'Даяршыдан сұраңыз — барлық тағамдар ортақ асханада дайындалады.',
+    gotIt: 'Түсінікті', filters: 'Сүзгілер', price: 'Баға', from: 'Бастап', to: 'Дейін', reset: 'Тастау',
+    addToOrder: 'Тапсырысқа қосу', portion: 'Порция',
+    rating: 'Рейтинг', cookTime: 'Дайындау уақыты', category: 'Санат', kcal: 'ккал', min: 'мин',
+    unavailable: 'Таусылды', unavailableNow: 'Қазір таусылды',
+    sortLabel: 'Сұрыптау', sortDefault: 'Әдепкі бойынша', sortPriceAsc: 'Алдымен арзан',
+    sortPriceDesc: 'Алдымен қымбат', sortRating: 'Алдымен жоғары рейтингті',
+    prepLabel: 'Дайындау уақыты', prepAny: 'Кез келген', prepUpTo15: '15 минутқа дейін', prepUpTo30: '30 минутқа дейін',
+    spicyLabel: 'Ащы', spicyAny: 'Кез келген', spicySpicy: 'Ащы', spicyMild: 'Ащы емес',
+    alsoShowLabel: 'Сонымен қатар тек көрсету', vegOnly: 'Вегетариандық', offerOnly: 'Жеңілдікпен', recommendedOnly: 'Ұсынамыз',
+    sortBtnLabel: 'Сұрыптау',
+    randomBtnTitle: 'Кездейсоқ тағам', randomModalTitle: 'Кездейсоқ таңдау',
+    randomSlotMain: 'Негізгі', randomSlotDrink: 'Сусын', randomSlotDessert: 'Десерт',
+    spinAgain: 'Тағы айналдыру', addAllToCart: 'Барлығын тапсырысқа қосу', addedAllToCart: 'тапсырысқа қосылды',
+    goesWellTitle: 'Осы тағаммен бірге тапсырыс береді',
+    paymentModalTitle: 'Kaspi арқылы төлеу', paymentHintPrefix: 'QR сканерленбесе, қолмен аударыңыз:',
+    paymentPaidBtn: 'Төледім, тапсырысты жіберу',
+    paymentChooseTitle: 'Төлем тәсілі', paymentMethodCash: 'Даяршыға қолма-қол / картамен', paymentMethodKaspi: 'Kaspi',
+    paymentWaitTitle: 'Төлем растауын күтудеміз…', paymentWaitSub: 'Әдетте бұл аударымнан кейін бірнеше секунд алады.',
+    paymentTimeoutTitle: 'Автоматты түрде растау мүмкін болмады', paymentTimeoutSub: 'Тапсырыс даяршыға жіберілді — ол сізбен байланысады.',
+    paymentConfirmed: 'Төлем расталды, тапсырыс асханаға жіберілді', close: 'Жабу',
+    readyInPrefix: 'Дайын болады: ', orderReadyTitle: 'Тапсырыс дайын!', orderReadySub: 'Даяршы тапсырысыңызды әкеле жатыр',
+    orderNumLabel: 'Тапсырыс #', statusHeading: 'Тапсырыс мәртебесі',
+    statusTotalLabel: 'Жиыны', statusEmptyTitle: 'Белсенді тапсырыстар жоқ',
+    statusEmptySub: 'Тапсырысты асханаға жібергенде мәртебе осында пайда болады.'
   }
 };
 
@@ -175,7 +231,11 @@ const CAT_ALL = 'ALL'; // internal sentinel — not displayed directly, see catL
 function catLabel(cat) {
   if (cat === CAT_ALL) return t('allCats');
   const meta = CAT_META[cat];
-  return currentLang() === 'en' ? (meta ? meta.nameEn : cat) : cat;
+  if (!meta) return cat;
+  const lang = currentLang();
+  if (lang === 'en') return meta.nameEn || cat;
+  if (lang === 'kz') return meta.nameKz || cat;
+  return cat;
 }
 
 /* ------------------------------------------------------------------ menu -------------------------------------------------------------------- */
@@ -591,7 +651,7 @@ function renderBrand() {
   byId('cartDineInLabel').textContent = t('dineIn');
   byId('cartTableLabel').textContent = tableLabel();
   byId('langCode').textContent = LANGS[state.lang].code;
-  byId('langBtn').title = currentLang() === 'en' ? 'Change language' : 'Сменить язык';
+  byId('langBtn').title = t('langBtnTitle');
   byId('infoBtn').title = t('goodToKnow');
 }
 
@@ -1232,7 +1292,9 @@ function renderModals() {
   byId('infoVenue').textContent = RESTAURANT.name;
   byId('infoTable').textContent = tableLabel();
   byId('infoHoursTitle').textContent = t('hours');
-  byId('infoHoursValue').textContent = (currentLang() === 'en' ? RESTAURANT.hoursEn : RESTAURANT.hoursRu) || t('hoursValue');
+  const hoursLang = currentLang();
+  const hoursText = hoursLang === 'en' ? RESTAURANT.hoursEn : hoursLang === 'kz' ? RESTAURANT.hoursKz : RESTAURANT.hoursRu;
+  byId('infoHoursValue').textContent = hoursText || t('hoursValue');
   byId('infoAddressTitle').textContent = t('address');
   byId('infoAddressValue').textContent = RESTAURANT.address;
   byId('infoPhoneTitle').textContent = t('phone');
@@ -1282,7 +1344,7 @@ function renderModals() {
     matchesSpicy(d) && matchesVegOnly(d) && matchesOfferOnly(d) && matchesRecommendedOnly(d) &&
     (state.screen === 'menu' ? matchesTab(d) : true)
   ).length;
-  byId('applyFiltersBtn').textContent = (currentLang() === 'en' ? 'Show ' : 'Показать ') + positionsLabel(resultCount);
+  byId('applyFiltersBtn').textContent = t('filtersShowPrefix') + positionsLabel(resultCount);
 
   byId('sortBackdrop').hidden = !state.sortOpen;
   byId('sortModalTitle').textContent = t('sortLabel');
@@ -1411,12 +1473,13 @@ async function loadMenu() {
   RESTAURANT = {
     name: data.restaurant.name, phone: data.restaurant.phone, phoneTel: data.restaurant.phoneTel,
     address: data.restaurant.address, hoursRu: data.restaurant.hoursRu, hoursEn: data.restaurant.hoursEn,
+    hoursKz: data.restaurant.hoursKz,
     paymentEnabled: !!data.restaurant.paymentEnabled,
     kaspiQrUrl: data.restaurant.kaspiQrUrl, kaspiDisplayName: data.restaurant.kaspiDisplayName
   };
   CATS = data.categories.map(c => c.nameRu);
   CAT_META = {};
-  data.categories.forEach(c => { CAT_META[c.nameRu] = { nameEn: c.nameEn }; });
+  data.categories.forEach(c => { CAT_META[c.nameRu] = { nameEn: c.nameEn, nameKz: c.nameKz }; });
   DISHES = data.dishes;
 }
 

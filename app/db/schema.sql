@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS restaurants (
   kaspi_display_name   TEXT,                           -- fallback text (phone/name) if the QR won't scan
   payment_auto_confirm BOOLEAN NOT NULL DEFAULT false, -- confirm payment automatically via a phone notification-forwarder instead of manual Telegram verification
   kaspi_webhook_token  TEXT,                           -- secret in the notify-webhook URL that identifies this restaurant
+  paloma_enabled  BOOLEAN NOT NULL DEFAULT false,       -- push submitted orders into the restaurant's own Paloma365 POS
+  paloma_authkey  TEXT,                                 -- the restaurant's own Paloma365 API AUTHKEY
+  paloma_point_id TEXT,                                 -- which Paloma365 venue (point_id) orders go to
+  paloma_class    TEXT DEFAULT 'Tester',                -- Paloma API "class" param — confirm the real production value with Paloma365 before going live
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -47,6 +51,7 @@ CREATE TABLE IF NOT EXISTS dishes (
   available     BOOLEAN NOT NULL DEFAULT true,
   is_spicy      BOOLEAN NOT NULL DEFAULT false,
   is_vegetarian BOOLEAN NOT NULL DEFAULT false,
+  paloma_object_id TEXT,                       -- links this dish to its item in the restaurant's Paloma365 catalog
   sort_order    INTEGER NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -71,6 +76,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total         INTEGER NOT NULL,
   status        TEXT NOT NULL DEFAULT 'sent', -- sent | awaiting_payment | confirmed | expired
   payment_method TEXT,                        -- cash | kaspi | null (payment not required)
+  paloma_order_id TEXT,                       -- Paloma365's own id for this order, once successfully pushed
   telegram_message_id TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()

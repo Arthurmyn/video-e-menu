@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
       const restaurantId = await getRestaurantId(client);
       const rows = await client.query(
         `SELECT d.id, d.category_id, c.name_ru AS category_ru, d.name, d.img_url, d.video_url, d.rating, d.cal, d.time_min,
-                d.popular, d.offer_pct, d.available, d.is_spicy, d.is_vegetarian, d.sort_order,
+                d.popular, d.offer_pct, d.available, d.is_spicy, d.is_vegetarian, d.paloma_object_id, d.sort_order,
                 s.id AS size_id, s.label AS size_label, s.price AS size_price, s.sort_order AS size_sort
          FROM dishes d
          JOIN categories c ON c.id = d.category_id
@@ -45,7 +45,8 @@ module.exports = async (req, res) => {
           byId.set(r.id, {
             id: r.id, categoryId: r.category_id, categoryRu: r.category_ru, name: r.name,
             imgUrl: r.img_url, videoUrl: r.video_url, rating: r.rating !== null ? Number(r.rating) : null, cal: r.cal, time: r.time_min,
-            popular: r.popular, offerPct: r.offer_pct, available: r.available, spicy: r.is_spicy, vegetarian: r.is_vegetarian, sortOrder: r.sort_order, sizes: []
+            popular: r.popular, offerPct: r.offer_pct, available: r.available, spicy: r.is_spicy, vegetarian: r.is_vegetarian,
+            palomaObjectId: r.paloma_object_id, sortOrder: r.sort_order, sizes: []
           });
         }
         if (r.size_id !== null) byId.get(r.id).sizes.push({ id: r.size_id, label: r.size_label, price: r.size_price });

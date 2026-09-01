@@ -110,7 +110,9 @@ const I18N = {
     readyInPrefix: 'Готово через ', orderReadyTitle: 'Заказ готов!', orderReadySub: 'Официант уже несёт ваш заказ',
     orderNumLabel: 'Заказ #', statusHeading: 'Статус заказа',
     statusTotalLabel: 'Итого', statusEmptyTitle: 'Нет активных заказов',
-    statusEmptySub: 'Здесь появится статус, когда вы отправите заказ на кухню.'
+    statusEmptySub: 'Здесь появится статус, когда вы отправите заказ на кухню.',
+    kitchenLabel: 'Касса: ', kitchenNew: 'принят', kitchenCooking: 'готовится', kitchenReady: 'готово',
+    kitchenDelivering: 'в пути', kitchenCanceled: 'отменён', kitchenTakeout: 'самовывоз', kitchenDelivered: 'выдан'
   },
   en: {
     dineIn: 'Dine-in', searchPlaceholder: 'Search the menu',
@@ -155,7 +157,9 @@ const I18N = {
     readyInPrefix: 'Ready in ', orderReadyTitle: 'Order ready!', orderReadySub: 'Your order is on its way',
     orderNumLabel: 'Order #', statusHeading: 'Order status',
     statusTotalLabel: 'Total', statusEmptyTitle: 'No active orders',
-    statusEmptySub: "Status will show up here once you've sent an order to the kitchen."
+    statusEmptySub: "Status will show up here once you've sent an order to the kitchen.",
+    kitchenLabel: 'Kassa: ', kitchenNew: 'received', kitchenCooking: 'cooking', kitchenReady: 'ready',
+    kitchenDelivering: 'on the way', kitchenCanceled: 'canceled', kitchenTakeout: 'takeout', kitchenDelivered: 'delivered'
   },
   kz: {
     dineIn: 'Зал', searchPlaceholder: 'Мәзірден іздеу',
@@ -200,7 +204,9 @@ const I18N = {
     readyInPrefix: 'Дайын болады: ', orderReadyTitle: 'Тапсырыс дайын!', orderReadySub: 'Даяршы тапсырысыңызды әкеле жатыр',
     orderNumLabel: 'Тапсырыс #', statusHeading: 'Тапсырыс мәртебесі',
     statusTotalLabel: 'Жиыны', statusEmptyTitle: 'Белсенді тапсырыстар жоқ',
-    statusEmptySub: 'Тапсырысты асханаға жібергенде мәртебе осында пайда болады.'
+    statusEmptySub: 'Тапсырысты асханаға жібергенде мәртебе осында пайда болады.',
+    kitchenLabel: 'Касса: ', kitchenNew: 'қабылданды', kitchenCooking: 'дайындалуда', kitchenReady: 'дайын',
+    kitchenDelivering: 'жолда', kitchenCanceled: 'бас тартылды', kitchenTakeout: 'өзі алып кету', kitchenDelivered: 'берілді'
   }
 };
 
@@ -1031,13 +1037,48 @@ function hideReadyBar() {
   renderReadyBar();
 }
 
+let readyTickCount = 0;
 function ensureReadyTicking() {
   if (readyTickTimer) return;
   readyTickTimer = setInterval(() => {
     if (!state.activeOrder) { clearInterval(readyTickTimer); readyTickTimer = null; return; }
     renderReadyBar();
     if (state.screen === 'orderstatus') renderOrderStatusScreen();
+    readyTickCount++;
+    if (state.screen === 'orderstatus' && readyTickCount % 5 === 0) pollKitchenStatus();
   }, 1000);
+}
+
+// Real status from the restaurant's own POS (Paloma365), when that
+// integration is on and this order was successfully pushed there — an
+// add-on to the simulated ETA above, not a replacement for it, since not
+// every order/dish will have a POS mapping.
+let kitchenStatusCache = { orderId: null, status: null };
+let kitchenPollInFlight = false;
+const KITCHEN_STATUS_KEY = {
+  '0': 'kitchenNew', 'new': 'kitchenNew', 'null': 'kitchenNew',
+  '1': 'kitchenCooking', 'cooking': 'kitchenCooking',
+  '2': 'kitchenReady', 'ready': 'kitchenReady',
+  '3': 'kitchenDelivering', 'delivering': 'kitchenDelivering',
+  '4': 'kitchenCanceled', 'canceled': 'kitchenCanceled',
+  '5': 'kitchenTakeout', 'take out': 'kitchenTakeout', 'takeout': 'kitchenTakeout',
+  '6': 'kitchenDelivered', 'delivered': 'kitchenDelivered'
+};
+
+function pollKitchenStatus() {
+  const order = state.activeOrder;
+  if (!order || kitchenPollInFlight) return;
+  kitchenPollInFlight = true;
+  fetch(`/api/order/${order.id}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.ok) {
+        kitchenStatusCache = { orderId: order.id, status: data.palomaStatus || null };
+        if (state.screen === 'orderstatus' && state.activeOrder && state.activeOrder.id === order.id) renderOrderStatusScreen();
+      }
+    })
+    .catch(() => { /* transient network hiccup — next poll will retry */ })
+    .finally(() => { kitchenPollInFlight = false; });
 }
 
 function paintRing(circleEl, fraction) {
@@ -1149,6 +1190,11 @@ function renderOrderStatusScreen() {
   byId('statusReadyNote').textContent = t('orderReadySub');
   paintRing(byId('statusRingFg'), info.fraction);
 
+  const kitchenKnown = kitchenStatusCache.orderId === order.id && kitchenStatusCache.status;
+  const kitchenKey = kitchenKnown ? KITCHEN_STATUS_KEY[String(kitchenStatusCache.status).toLowerCase()] : null;
+  byId('statusKitchenNote').hidden = !kitchenKey;
+  if (kitchenKey) byId('statusKitchenNote').textContent = t('kitchenLabel') + t(kitchenKey);
+
   byId('statusItems').innerHTML = order.items.map(it => `
     <div class="status-item">
       <div>
@@ -1176,6 +1222,7 @@ async function submitOrder(entries, total, opts) {
     total,
     method: (opts && opts.method) || undefined,
     items: entries.map(c => ({
+      id: Number(c.dish.id),
       name: c.dish.name,
       size: c.dish.sizes[c.size].label,
       qty: c.qty,

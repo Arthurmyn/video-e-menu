@@ -7,6 +7,7 @@
 // that could be committed or shipped to the browser.
 
 const { getPool, getRestaurant } = require('../_db');
+const { palomaRequest, isConfigured: palomaConfigured } = require('../_paloma');
 
 const MAX_ITEMS = 50;
 const MAX_STRING = 200;
@@ -73,6 +74,75 @@ async function sendTelegram(text) {
   return tgData;
 }
 
+// Pushes the order into the restaurant's own Paloma365 kassa, if configured.
+// Only ever logs on failure/partial-mapping — a Paloma hiccup must never
+// affect the guest's own order, which already went through above regardless.
+async function pushToPaloma(client, restaurant, body, orderId, method, mode) {
+  if (!palomaConfigured(restaurant) || !restaurant.paloma_point_id) return { attempted: false };
+
+  const orderedIds = body.items.map(it => it.id).filter(id => Number.isInteger(id));
+  let dishRows = [];
+  if (orderedIds.length) {
+    try {
+      const result = await client.query(
+        'SELECT id, paloma_object_id FROM dishes WHERE restaurant_id = $1 AND id = ANY($2)',
+        [restaurant.id, orderedIds]
+      );
+      dishRows = result.rows;
+    } catch (e) {
+      console.error('[order] Failed to look up dish->Paloma mappings:', e);
+    }
+  }
+  const objectIdByDishId = new Map(dishRows.filter(r => r.paloma_object_id).map(r => [r.id, r.paloma_object_id]));
+
+  const mappedItems = [];
+  const unmappedNames = [];
+  for (const it of body.items) {
+    const palomaObjectId = Number.isInteger(it.id) ? objectIdByDishId.get(it.id) : undefined;
+    if (palomaObjectId) {
+      mappedItems.push({ object_id: Number(palomaObjectId) || palomaObjectId, name: clean(it.name), count: Number(it.qty) || 1, price: Number(it.lineTotal) / (Number(it.qty) || 1) });
+    } else {
+      unmappedNames.push(clean(it.name));
+    }
+  }
+
+  if (mappedItems.length === 0) {
+    return { attempted: true, ok: false, error: 'No ordered items are mapped to a Paloma365 item', unmappedNames };
+  }
+
+  const mappedTotal = mappedItems.reduce((sum, it) => sum + it.price * it.count, 0);
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const almatyDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Almaty' }));
+  const dateStr = `${almatyDate.getFullYear()}-${pad(almatyDate.getMonth() + 1)}-${pad(almatyDate.getDate())} ${pad(almatyDate.getHours())}:${pad(almatyDate.getMinutes())}:${pad(almatyDate.getSeconds())}`;
+
+  const result = await palomaRequest(restaurant, 'order', {
+    query: { point_id: restaurant.paloma_point_id },
+    body: {
+      order_id: String(orderId),
+      date: dateStr,
+      name: clean(body.table || 'Гость'),
+      person_amount: 1,
+      total_price: Math.round(mappedTotal),
+      discount_amount: 0,
+      delivery_type: 0, // dine-in has no real analog in this API — 0 (self-pickup) is the closest
+      is_cash: method === 'cash',
+      is_payed: false,
+      order_items: mappedItems
+    }
+  });
+
+  if (result.ok && result.data && result.data.paloma_order_id) {
+    try {
+      await client.query('UPDATE orders SET paloma_order_id = $1 WHERE id = $2', [String(result.data.paloma_order_id), orderId]);
+    } catch (e) {
+      console.error('[order] Failed to save paloma_order_id:', e);
+    }
+  }
+
+  return { attempted: true, ok: !!(result.ok && result.data && result.data.paloma_order_id), error: result.error, unmappedNames };
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -127,6 +197,22 @@ module.exports = async (req, res) => {
       orderId = insert.rows[0].id;
     } catch (e) {
       console.error('[order] Failed to log order in DB (Telegram message already sent):', e);
+    }
+  }
+
+  if (orderId && restaurant && restaurant.paloma_enabled) {
+    try {
+      const pushResult = await pushToPaloma(client, restaurant, body, orderId, method, mode);
+      if (pushResult.attempted && !pushResult.ok) {
+        console.error('[order] Paloma365 push failed:', pushResult.error, pushResult.unmappedNames);
+        const warnLines = ['⚠️ Не удалось передать заказ в кассу Paloma — введите вручную.'];
+        if (pushResult.unmappedNames && pushResult.unmappedNames.length) {
+          warnLines.push('Без привязки к Paloma: ' + pushResult.unmappedNames.join(', '));
+        }
+        await sendTelegram(warnLines.join('\n'));
+      }
+    } catch (e) {
+      console.error('[order] Unexpected error pushing to Paloma365:', e);
     }
   }
 

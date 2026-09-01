@@ -7,6 +7,7 @@ let dishes = [];
 let categories = [];
 let editingId = null; // null = creating a new dish
 let paymentSettings = { paymentEnabled: false, kaspiQrUrl: null, kaspiDisplayName: null };
+let palomaSettings = { palomaEnabled: false, palomaAuthkey: null, palomaPointId: null, palomaClass: 'Tester' };
 
 let toastTimer = null;
 function flash(msg) {
@@ -75,8 +76,8 @@ byId('logoutBtn').addEventListener('click', async () => {
 
 async function loadAll() {
   try {
-    const [dishRes, catRes, payRes] = await Promise.all([
-      api('/api/admin/dishes'), api('/api/admin/categories'), api('/api/admin/restaurant')
+    const [dishRes, catRes, payRes, palomaRes] = await Promise.all([
+      api('/api/admin/dishes'), api('/api/admin/categories'), api('/api/admin/restaurant'), api('/api/admin/paloma')
     ]);
     dishes = dishRes.dishes;
     categories = catRes.categories;
@@ -84,8 +85,13 @@ async function loadAll() {
       paymentEnabled: payRes.paymentEnabled, kaspiQrUrl: payRes.kaspiQrUrl, kaspiDisplayName: payRes.kaspiDisplayName,
       paymentAutoConfirm: payRes.paymentAutoConfirm, kaspiWebhookToken: payRes.kaspiWebhookToken
     };
+    palomaSettings = {
+      palomaEnabled: palomaRes.palomaEnabled, palomaAuthkey: palomaRes.palomaAuthkey,
+      palomaPointId: palomaRes.palomaPointId, palomaClass: palomaRes.palomaClass
+    };
     renderTable();
     renderPaymentCard();
+    renderPalomaCard();
   } catch (e) {
     flash('Не удалось загрузить данные: ' + e.message);
   }
@@ -181,6 +187,73 @@ byId('savePaymentBtn').addEventListener('click', async () => {
     if (data.kaspiWebhookToken) paymentSettings.kaspiWebhookToken = data.kaspiWebhookToken;
     renderPaymentCard();
     flash('Настройки оплаты сохранены');
+  } catch (e) {
+    flash('Не удалось сохранить: ' + e.message);
+  }
+});
+
+/* ------------------------------------------------------------- Paloma365 POS ----------------------------------------------------------- */
+
+function renderPalomaCard() {
+  byId('palomaEnabledInput').checked = !!palomaSettings.palomaEnabled;
+  byId('palomaAuthkeyInput').value = palomaSettings.palomaAuthkey || '';
+  byId('palomaClassInput').value = palomaSettings.palomaClass || 'Tester';
+  const select = byId('palomaPointSelect');
+  if (palomaSettings.palomaPointId && ![...select.options].some(o => o.value === palomaSettings.palomaPointId)) {
+    select.insertAdjacentHTML('beforeend', `<option value="${palomaSettings.palomaPointId}">Точка #${palomaSettings.palomaPointId}</option>`);
+  }
+  select.value = palomaSettings.palomaPointId || '';
+}
+
+byId('palomaLoadPointsBtn').addEventListener('click', async () => {
+  const statusEl = byId('palomaPointsStatus');
+  statusEl.textContent = 'Загружаем…';
+  try {
+    const authkey = byId('palomaAuthkeyInput').value.trim();
+    if (!authkey) { statusEl.textContent = 'Сначала укажите AUTHKEY'; return; }
+    if (authkey !== palomaSettings.palomaAuthkey || !palomaSettings.palomaEnabled) {
+      await savePalomaSettings({ palomaAuthkey: authkey, palomaEnabled: true });
+    }
+    const data = await api('/api/admin/paloma', { method: 'POST', body: JSON.stringify({ action: 'points' }) });
+    const select = byId('palomaPointSelect');
+    select.innerHTML = '<option value="">— не выбрано —</option>' +
+      (data.points || []).map(p => `<option value="${p.point_id}">${esc(p.name)} — ${esc(p.address || '')}</option>`).join('');
+    select.value = palomaSettings.palomaPointId || '';
+    statusEl.textContent = `Найдено точек: ${(data.points || []).length}`;
+  } catch (e) {
+    statusEl.textContent = 'Не удалось загрузить точки: ' + e.message;
+  }
+});
+
+byId('palomaAutomatchBtn').addEventListener('click', async () => {
+  const statusEl = byId('palomaAutomatchStatus');
+  statusEl.textContent = 'Сопоставляем…';
+  try {
+    const data = await api('/api/admin/paloma', { method: 'POST', body: JSON.stringify({ action: 'automatch' }) });
+    statusEl.textContent = `Сопоставлено ${data.matched} из ${data.total} блюд по названию. Остальные привяжите вручную в карточке блюда.`;
+    await loadAll();
+  } catch (e) {
+    statusEl.textContent = 'Не удалось сопоставить: ' + e.message;
+  }
+});
+
+async function savePalomaSettings(extra) {
+  const payload = {
+    palomaEnabled: byId('palomaEnabledInput').checked,
+    palomaAuthkey: byId('palomaAuthkeyInput').value.trim() || null,
+    palomaPointId: byId('palomaPointSelect').value || null,
+    palomaClass: byId('palomaClassInput').value.trim() || 'Tester',
+    ...extra
+  };
+  await api('/api/admin/paloma', { method: 'PUT', body: JSON.stringify(payload) });
+  palomaSettings = { ...palomaSettings, ...payload };
+}
+
+byId('savePalomaBtn').addEventListener('click', async () => {
+  try {
+    await savePalomaSettings();
+    renderPalomaCard();
+    flash('Настройки Paloma365 сохранены');
   } catch (e) {
     flash('Не удалось сохранить: ' + e.message);
   }
@@ -320,6 +393,7 @@ function openModal(id) {
   byId('fPopular').checked = d ? d.popular : false;
   byId('fSpicy').checked = d ? !!d.spicy : false;
   byId('fVegetarian').checked = d ? !!d.vegetarian : false;
+  byId('fPalomaObjectId').value = d && d.palomaObjectId ? d.palomaObjectId : '';
   byId('deleteDishBtn').hidden = !d;
 
   byId('modalBackdrop').hidden = false;
@@ -350,7 +424,8 @@ byId('saveDishBtn').addEventListener('click', async () => {
     available: byId('fAvailable').checked,
     popular: byId('fPopular').checked,
     spicy: byId('fSpicy').checked,
-    vegetarian: byId('fVegetarian').checked
+    vegetarian: byId('fVegetarian').checked,
+    palomaObjectId: byId('fPalomaObjectId').value.trim() || null
   };
 
   try {

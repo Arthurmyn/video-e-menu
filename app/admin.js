@@ -33,7 +33,7 @@ async function api(path, options) {
 
 async function checkAuth() {
   try {
-    const data = await api('/api/admin/me');
+    const data = await api('/api/admin/auth');
     return !!data.authed;
   } catch (e) {
     return false;
@@ -59,7 +59,7 @@ async function doLogin() {
   const password = byId('passwordInput').value;
   byId('loginError').textContent = '';
   try {
-    await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
+    await api('/api/admin/auth', { method: 'POST', body: JSON.stringify({ action: 'login', password }) });
     byId('passwordInput').value = '';
     await showApp();
   } catch (e) {
@@ -68,7 +68,7 @@ async function doLogin() {
 }
 
 byId('logoutBtn').addEventListener('click', async () => {
-  await api('/api/admin/logout', { method: 'POST' }).catch(() => {});
+  await api('/api/admin/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }).catch(() => {});
   showLogin();
 });
 
@@ -76,18 +76,18 @@ byId('logoutBtn').addEventListener('click', async () => {
 
 async function loadAll() {
   try {
-    const [dishRes, catRes, payRes, palomaRes] = await Promise.all([
-      api('/api/admin/dishes'), api('/api/admin/categories'), api('/api/admin/restaurant'), api('/api/admin/paloma')
+    const [dishRes, catRes, restaurantRes] = await Promise.all([
+      api('/api/admin/dishes'), api('/api/admin/categories'), api('/api/admin/restaurant')
     ]);
     dishes = dishRes.dishes;
     categories = catRes.categories;
     paymentSettings = {
-      paymentEnabled: payRes.paymentEnabled, kaspiQrUrl: payRes.kaspiQrUrl, kaspiDisplayName: payRes.kaspiDisplayName,
-      paymentAutoConfirm: payRes.paymentAutoConfirm, kaspiWebhookToken: payRes.kaspiWebhookToken
+      paymentEnabled: restaurantRes.paymentEnabled, kaspiQrUrl: restaurantRes.kaspiQrUrl, kaspiDisplayName: restaurantRes.kaspiDisplayName,
+      paymentAutoConfirm: restaurantRes.paymentAutoConfirm, kaspiWebhookToken: restaurantRes.kaspiWebhookToken
     };
     palomaSettings = {
-      palomaEnabled: palomaRes.palomaEnabled, palomaAuthkey: palomaRes.palomaAuthkey,
-      palomaPointId: palomaRes.palomaPointId, palomaClass: palomaRes.palomaClass
+      palomaEnabled: restaurantRes.palomaEnabled, palomaAuthkey: restaurantRes.palomaAuthkey,
+      palomaPointId: restaurantRes.palomaPointId, palomaClass: restaurantRes.palomaClass
     };
     renderTable();
     renderPaymentCard();
@@ -214,7 +214,7 @@ byId('palomaLoadPointsBtn').addEventListener('click', async () => {
     if (authkey !== palomaSettings.palomaAuthkey || !palomaSettings.palomaEnabled) {
       await savePalomaSettings({ palomaAuthkey: authkey, palomaEnabled: true });
     }
-    const data = await api('/api/admin/paloma', { method: 'POST', body: JSON.stringify({ action: 'points' }) });
+    const data = await api('/api/admin/restaurant', { method: 'POST', body: JSON.stringify({ action: 'points' }) });
     const select = byId('palomaPointSelect');
     select.innerHTML = '<option value="">— не выбрано —</option>' +
       (data.points || []).map(p => `<option value="${p.point_id}">${esc(p.name)} — ${esc(p.address || '')}</option>`).join('');
@@ -229,7 +229,7 @@ byId('palomaAutomatchBtn').addEventListener('click', async () => {
   const statusEl = byId('palomaAutomatchStatus');
   statusEl.textContent = 'Сопоставляем…';
   try {
-    const data = await api('/api/admin/paloma', { method: 'POST', body: JSON.stringify({ action: 'automatch' }) });
+    const data = await api('/api/admin/restaurant', { method: 'POST', body: JSON.stringify({ action: 'automatch' }) });
     statusEl.textContent = `Сопоставлено ${data.matched} из ${data.total} блюд по названию. Остальные привяжите вручную в карточке блюда.`;
     await loadAll();
   } catch (e) {
@@ -245,7 +245,7 @@ async function savePalomaSettings(extra) {
     palomaClass: byId('palomaClassInput').value.trim() || 'Tester',
     ...extra
   };
-  await api('/api/admin/paloma', { method: 'PUT', body: JSON.stringify(payload) });
+  await api('/api/admin/restaurant', { method: 'PUT', body: JSON.stringify(payload) });
   palomaSettings = { ...palomaSettings, ...payload };
 }
 
